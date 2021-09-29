@@ -69,11 +69,12 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
             throw new Error(`Required config option ${option} is missing!`)
         }
     }
-
+    console.log('requiredConfigOptions OK')
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
 
+    console.log('redshift check OK')
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
@@ -81,7 +82,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         [],
         config
     )
-
+    console.log('totalRowsResult done')
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
@@ -120,6 +121,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
 
 
 const executeQuery = async (
+    console.log('executeQuery')
     query: string,
     values: any[],
     config: PluginMeta<RedshiftImportPlugin>['config']
@@ -139,8 +141,11 @@ const executeQuery = async (
     let queryResult: QueryResult<any> | null = null
     try {
         queryResult = await pgClient.query(query, values)
+        console.log('queryResult')
     } catch (err) {
         error = err
+        console.log('error')
+        console.log(error)
     }
 
     await pgClient.end()
