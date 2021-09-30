@@ -236,7 +236,10 @@ const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
         transform: async (row, _) => {
+            console.log('transforming')
+            console.log(row)
             const { timestamp, distinct_id, event, properties } = row
+            console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}`)
             const eventToIngest = { 
                 "event": event, 
                 "timestamp": timestamp,
@@ -246,6 +249,9 @@ const transformations: TransformationsMap = {
                     source: 'redshift_import',
                 }
             }
+            console.log('eventToIngest')
+            console.log(eventToIngest)
+            console.log(`eventToIngest.event = ${eventToIngest.event}`)
             return eventToIngest
         }
     },
