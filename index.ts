@@ -248,7 +248,7 @@ const transformations: TransformationsMap = {
                     ...JSON.parse(properties), 
                     source: 'redshift_import',
                     set: {
-                        ...JSON.parse(set),
+                        ...JSON.parse(set)
                     }
                 }
             }
