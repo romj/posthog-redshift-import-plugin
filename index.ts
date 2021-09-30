@@ -242,7 +242,6 @@ const transformations: TransformationsMap = {
             console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}`)
             const eventToIngest = { 
                 "event": event, 
-                "timestamp": timestamp,
                 properties: {
                     distinct_id, 
                     timestamp,
