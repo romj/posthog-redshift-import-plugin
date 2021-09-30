@@ -245,6 +245,7 @@ const transformations: TransformationsMap = {
                 "timestamp": timestamp,
                 properties: {
                     distinct_id, 
+                    timestamp,
                     ...JSON.parse(properties), 
                     source: 'redshift_import',
                 }
