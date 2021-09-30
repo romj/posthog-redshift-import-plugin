@@ -121,12 +121,11 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
 
 
 const executeQuery = async (
-    console.log('executeQuery')
     query: string,
     values: any[],
     config: PluginMeta<RedshiftImportPlugin>['config']
 ): Promise<ExecuteQueryResponse> => {
-
+    console.log('executeQuery')
     const pgClient = new Client({
         user: config.dbUsername,
         password: config.dbPassword,
