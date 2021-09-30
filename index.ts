@@ -54,6 +54,9 @@ const EVENTS_PER_BATCH = 10
 const REDIS_OFFSET_KEY = 'import_offset'
 
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
+    console.log('sanitizeSqlIdentifier')
+    console.log(unquotedIdentifier)
+    console.log(unquotedIdentifier.replace(/[^\w\d_]+/g, ''))
     return unquotedIdentifier.replace(/[^\w\d_]+/g, '')
 }
 
