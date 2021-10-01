@@ -237,7 +237,7 @@ const importAndIngestEvents = async (
 
     console.log(insertQuery)
 
-    const insertQueryResponse = await executeQuery(insertQuery, values, config)
+    const insertQueryResponse = await executeQuery(insertQuery, [], config)
 
     console.log(insertQueryResponse)
 
