@@ -157,10 +157,21 @@ const executeQuery = async (
     return { error, queryResult }
 }
 
+const getTotalRowsToImport = async (config) => {
+    const totalRowsResult = await executeQuery(
+        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)}`,
+        [],
+        config
+    )
+
+    return Number(totalRowsResult.queryResult.rows[0].count)
+}
+
 const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
+    console.log('importAndIngestEvents')
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
@@ -169,13 +180,17 @@ const importAndIngestEvents = async (
     }
 
     const { global, cache, config, jobs } = meta
+    console.log('global', global)
+    console.log('cache', cache)
+    console.log('config', config)
+    console.log('jobs', jobs)
 
     let offset: number
     if (payload.offset) {
         offset = payload.offset
     } else {
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
-        offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
+        offset = 0
     }
 
     console.log(offset, global.totalRows)
@@ -184,12 +199,11 @@ const importAndIngestEvents = async (
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
-
     
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         meta.config.tableName
     )} 
-    ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
+    ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
 
     const values = [offset]
@@ -209,7 +223,6 @@ const importAndIngestEvents = async (
     }
 
     const eventsToIngest: TransformedPluginEvent[] = []
-    
 
     for (const row of queryResponse.queryResult!.rows) {
         const event = await transformations[config.transformationName].transform(row, meta)
