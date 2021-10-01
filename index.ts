@@ -52,7 +52,6 @@ interface TransformationsMap {
 
 
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset'
 
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     //console.log('sanitizeSqlIdentifier')
@@ -80,48 +79,13 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
 
     console.log('redshift check OK')
-    // the way this is done means we'll continuously import as the table grows
-    // to only import historical data, we should set a totalRows value in storage once
-    const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)}`,
-        [],
-        config
-    )
-    console.log('totalRowsResult done')
-    if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
-        throw new Error('Unable to connect to Redshift!')
-    }
 
-    global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-
-    // if set to only import historical data, take a "snapshot" of the count
-    // on the first run and only import up to that point
-    if (config.importMechanism === 'Only import historical data') {
-        const totalRowsSnapshot = await storage.get('total_rows_snapshot', null)
-        if (!totalRowsSnapshot) {
-            await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
-        } else {
-            global.totalRows = Number(totalRowsSnapshot)
-        }
-    } 
-
-    
-    // used for picking up where we left off after a restart
-    const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-
-    // needed to prevent race conditions around offsets leading to events ingested twice
-    global.initialOffset = Number(offset)
-    await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
-
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(5, 'seconds')
 }
 
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
-    const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
-    const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
-    const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
-    await storage.set(REDIS_OFFSET_KEY, offsetToStore)
+    return
 }
 
 
@@ -145,10 +109,8 @@ const executeQuery = async (
     let queryResult: QueryResult<any> | null = null
     try {
         queryResult = await pgClient.query(query, values)
-        console.log('queryResult')
     } catch (err) {
         error = err
-        console.log('error')
         console.log(error)
     }
 
@@ -158,7 +120,6 @@ const executeQuery = async (
 }
 
 const getTotalRowsToImport = async (config) => {
-    console.log('getTotalRowsToImport')
     const tableName = sanitizeSqlIdentifier(config.tableName),
           logTableName = sanitizeSqlIdentifier(config.logTableName)
     const totalRowsResult = await executeQuery(
@@ -188,15 +149,18 @@ const importAndIngestEvents = async (
     console.log('config', config)
     console.log('jobs', jobs)
 
-    const totalRowsToImport = await getTotalRowsToImport(config)
-    
-    console.log('getTotalRowsToImport results, ', totalRowsToImport)
-    
+
     let offset: number
     if (payload.offset) {
         offset = payload.offset
     } else {
-        const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
+        const totalRowsToImport = await getTotalRowsToImport(config)
+        console.log('getTotalRowsToImport results, ', totalRowsToImport)
+    
+        if (totalRowsToImport == 0) {
+            console.log(`No rows to import in ${config.tableName}`)
+            return
+        }
         offset = 0
     }
 
