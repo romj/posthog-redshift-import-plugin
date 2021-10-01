@@ -159,8 +159,10 @@ const executeQuery = async (
 
 const getTotalRowsToImport = async (config) => {
     console.log('getTotalRowsToImport')
+    const tableName = sanitizeSqlIdentifier(config.tableName),
+          logTableName = sanitizeSqlIdentifier(config.logTableName)
     const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)}`,
+        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
         [],
         config
     )
