@@ -238,7 +238,7 @@ const transformations: TransformationsMap = {
         transform: async (row, _) => {
             console.log('transforming')
             console.log(row)
-            const { timestamp, distinct_id, event, properties, set } = row
+            const { event_id, timestamp, distinct_id, event, properties, set } = row
             console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
             const eventToIngest = { 
                 "event": event, 
@@ -246,7 +246,6 @@ const transformations: TransformationsMap = {
                     distinct_id, 
                     timestamp,
                     ...JSON.parse(properties), 
-                    source: 'redshift_import',
                     "$set": {
                         ...JSON.parse(set)
                     }
