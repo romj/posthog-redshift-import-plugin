@@ -20,6 +20,7 @@ type RedshiftImportPlugin = Plugin<{
         tableName: string
         dbUsername: string
         dbPassword: string
+        logTableName: string
         eventsToIgnore: string
         orderByColumn: string
         transformationName: string
@@ -208,17 +209,37 @@ const importAndIngestEvents = async (
     }
 
     const eventsToIngest: TransformedPluginEvent[] = []
+    
 
     for (const row of queryResponse.queryResult!.rows) {
         const event = await transformations[config.transformationName].transform(row, meta)
         eventsToIngest.push(event)
     }
 
-
+    const eventIdsIngested = []
+    
     for (const event of eventsToIngest) {
         console.log(event)
         posthog.capture(event.event, event.properties)
+        eventIdsIngested.push(event.id)
     }
+    
+    console.log(eventIdsIngested)
+    
+    const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
+    
+    const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
+        meta.config.logTableName
+    )} 
+    (event_id, exported_at)
+    VALUES
+    ${joinedEventIds}`
+
+    console.log(insertQuery)
+
+    const insertQueryResponse = await executeQuery(insertQuery, values, config)
+
+    console.log(insertQueryResponse)
 
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
@@ -242,6 +263,7 @@ const transformations: TransformationsMap = {
             console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
             const eventToIngest = { 
                 "event": event, 
+                id:event_id,
                 properties: {
                     distinct_id, 
                     timestamp,
@@ -254,39 +276,6 @@ const transformations: TransformationsMap = {
             console.log('eventToIngest')
             console.log(eventToIngest)
             console.log(`eventToIngest.event = ${eventToIngest.event}`)
-            return eventToIngest
-        }
-    },
-    'JSON Map': {
-        author: 'yakkomajuri',
-        transform: async (row, { attachments }) => {
-            if (!attachments.rowToEventMap) {
-                throw new Error('Row to event mapping JSON file not provided!')
-            }
-            
-            let rowToEventMap: Record<string, string> = {}
-            try {
-                rowToEventMap = JSON.parse(attachments.rowToEventMap.contents.toString())
-            } catch {
-                throw new Error('Row to event mapping JSON file contains invalid JSON!')
-            }
-
-            const eventToIngest = {
-                event: '',
-                properties: {} as Record<string, any> 
-            }
-
-            for (const [colName, colValue] of Object.entries(row)) {
-                if (!rowToEventMap[colName]) {
-                    continue
-                }
-                if (rowToEventMap[colName] === 'event') {
-                    eventToIngest.event = colValue
-                } else {
-                    eventToIngest.properties[rowToEventMap[colName]] = colValue
-                }
-            }
-
             return eventToIngest
         }
     }
