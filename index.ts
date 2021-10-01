@@ -67,7 +67,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 }
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    console.log('Hello World 2!')
+    console.log('setupPlugin')
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
@@ -158,6 +158,7 @@ const executeQuery = async (
 }
 
 const getTotalRowsToImport = async (config) => {
+    console.log('getTotalRowsToImport')
     const totalRowsResult = await executeQuery(
         `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)}`,
         [],
@@ -185,6 +186,10 @@ const importAndIngestEvents = async (
     console.log('config', config)
     console.log('jobs', jobs)
 
+    const totalRowsToImport = await getTotalRowsToImport(config)
+    
+    console.log('getTotalRowsToImport results, ', totalRowsToImport)
+    
     let offset: number
     if (payload.offset) {
         offset = payload.offset
