@@ -204,7 +204,7 @@ const importAndIngestEvents = async (
     
     for (const event of eventsToIngest) {
         console.log(event)
-        posthog.capture(event.event, event.properties)
+        //posthog.capture(event.event, event.properties)
         eventIdsIngested.push(event.id)
     }
     
@@ -221,9 +221,9 @@ const importAndIngestEvents = async (
 
     console.log(insertQuery)
 
-    const insertQueryResponse = await executeQuery(insertQuery, [], config)
+    //const insertQueryResponse = await executeQuery(insertQuery, [], config)
 
-    console.log(insertQueryResponse)
+    //console.log(insertQueryResponse)
 
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
