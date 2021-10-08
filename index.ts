@@ -55,13 +55,15 @@ const EVENTS_PER_BATCH = 10
 
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     //console.log('sanitizeSqlIdentifier')
-    //console.log(unquotedIdentifier)
+    console.log(unquotedIdentifier)
     //console.log(unquotedIdentifier.replace(/[^\w\d_]+/g, ''))
     return unquotedIdentifier
     //return unquotedIdentifier.replace(/[^\w\d_]+/g, '')
 }
 
 export const jobs: RedshiftImportPlugin['jobs'] = {
+    console.log('payload :', payload)
+    console.log('meta :', meta)
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
