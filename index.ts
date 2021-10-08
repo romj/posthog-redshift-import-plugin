@@ -95,6 +95,8 @@ const executeQuery = async (
     config: PluginMeta<RedshiftImportPlugin>['config']
 ): Promise<ExecuteQueryResponse> => {
     console.log('executeQuery')
+    console.log('query :')
+    console.log(query)
     const pgClient = new Client({
         user: config.dbUsername,
         password: config.dbPassword,
