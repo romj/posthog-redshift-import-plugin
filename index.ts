@@ -62,8 +62,10 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 }
 
 export const jobs: RedshiftImportPlugin['jobs'] = {
-    console.log('payload :', payload)
-    console.log('meta :', meta)
+    console.log('paylod')
+    console.log(payload)
+    console.log('meta')
+    console.log(meta)
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
