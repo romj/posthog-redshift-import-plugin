@@ -31,7 +31,7 @@ type RedshiftImportPlugin = Plugin<{
 //4 objects types :
 
 interface ImportEventsJobPayload extends Record<string, any> {
-    offset?: number
+    offset?: 1
     retriesPerformedSoFar: number
 }
 
