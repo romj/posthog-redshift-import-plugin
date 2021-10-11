@@ -28,6 +28,8 @@ type RedshiftImportPlugin = Plugin<{
     }
 }>
 
+//4 objects types :
+
 interface ImportEventsJobPayload extends Record<string, any> {
     offset?: number
     retriesPerformedSoFar: number
@@ -54,7 +56,7 @@ interface TransformationsMap {
 const EVENTS_PER_BATCH = 10
 
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
-    //console.log('sanitizeSqlIdentifier')
+    console.log('sanitizeSqlIdentifier')
     console.log(unquotedIdentifier)
     //console.log(unquotedIdentifier.replace(/[^\w\d_]+/g, ''))
     return unquotedIdentifier
@@ -62,6 +64,8 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 }
 
 export const jobs: RedshiftImportPlugin['jobs'] = {
+    console.log(ImportEventsJobPayload.offset)
+    console.log(ImportEventsJobPayload.retriesPerformedSoFar)
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
@@ -159,7 +163,7 @@ const importAndIngestEvents = async (
     } else {
         const totalRowsToImport = await getTotalRowsToImport(config)
         console.log('getTotalRowsToImport results, ', totalRowsToImport)
-    
+
         if (totalRowsToImport == 0) {
             console.log(`No rows to import in ${config.tableName}`)
             return
@@ -173,10 +177,10 @@ const importAndIngestEvents = async (
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
-    
+
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         meta.config.tableName
-    )} 
+    )}
     ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
 
@@ -204,20 +208,20 @@ const importAndIngestEvents = async (
     }
 
     const eventIdsIngested = []
-    
+
     for (const event of eventsToIngest) {
         console.log(event)
         posthog.capture(event.event, event.properties)
         eventIdsIngested.push(event.id)
     }
-    
+
     console.log(eventIdsIngested)
-    
+
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
-    
+
     const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
         meta.config.logTableName
-    )} 
+    )}
     (event_id, exported_at)
     VALUES
     ${joinedEventIds}`
@@ -240,6 +244,7 @@ const importAndIngestEvents = async (
 
 // Transformations can be added by any contributor
 // 'author' should be the contributor's GH username
+ /*
 const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
@@ -248,13 +253,13 @@ const transformations: TransformationsMap = {
             console.log(row)
             const { event_id, timestamp, distinct_id, event, properties, set } = row
             console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
-            const eventToIngest = { 
-                "event": event, 
+            const eventToIngest = {
+                "event": event,
                 id:event_id,
                 properties: {
-                    distinct_id, 
+                    distinct_id,
                     timestamp,
-                    ...JSON.parse(properties), 
+                    ...JSON.parse(properties),
                     "$set": {
                         ...JSON.parse(set)
                     }
@@ -266,4 +271,4 @@ const transformations: TransformationsMap = {
             return eventToIngest
         }
     }
-}
+}*/
