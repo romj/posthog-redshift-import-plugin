@@ -132,6 +132,7 @@ const executeQuery = async (
     return { error, queryResult }
 }
 
+// we define the number of row to import --> totalRowsResult 
 const getTotalRowsToImport = async (config) => {
     const tableName = sanitizeSqlIdentifier(config.tableName),
           logTableName = sanitizeSqlIdentifier(config.logTableName)
@@ -149,7 +150,7 @@ const importAndIngestEvents = async (
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     console.log('importAndIngestEvents')
-    console.log(payload.offset)
+    console.log('payload.offset', payload.offset)
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
@@ -178,7 +179,7 @@ const importAndIngestEvents = async (
         offset = 0
     }
 
-    console.log(offset, global.totalRows)
+    console.log(offset,'-', global.totalRows)
 
     if (offset > global.totalRows) {
         console.log(`Done processing all rows in ${config.tableName}`)
@@ -251,7 +252,7 @@ const importAndIngestEvents = async (
 
 // Transformations can be added by any contributor
 // 'author' should be the contributor's GH username
- /*
+
 const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
@@ -278,4 +279,4 @@ const transformations: TransformationsMap = {
             return eventToIngest
         }
     }
-}*/
+}
