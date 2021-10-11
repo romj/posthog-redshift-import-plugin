@@ -63,12 +63,12 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     //return unquotedIdentifier.replace(/[^\w\d_]+/g, '')
 }
 
+//new properties for RedshiftImportPlugin ?
 export const jobs: RedshiftImportPlugin['jobs'] = {
-    console.log(ImportEventsJobPayload.offset)
-    console.log(ImportEventsJobPayload.retriesPerformedSoFar)
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
+//new properties for RedshiftImportPlugin ?
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
     console.log('setupPlugin blaaaaaah')
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
@@ -87,12 +87,19 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(5, 'seconds')
 }
 
-
+//new properties for RedshiftImportPlugin ?
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     return
 }
 
+/* --> at this stage RedshiftImportPlugin has three properties : 
+        - jobs : [payload, meta]
+        - setupPlugin : [config, cage, jobs, global, storage]
+        - teardownPlugin [global, cache, storage]
+However it might only be method achived in order to verify that everything works
+*/
 
+// function used later in order to execute a specific query 
 const executeQuery = async (
     query: string,
     values: any[],
