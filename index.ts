@@ -80,7 +80,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
 
-    console.log('4 - global.totalRows  :', global.totalRows)
+    console.log('5 - global.totalRows  :', global.totalRows)
 
     // if set to only import historical data, take a "snapshot" of the count
     // on the first run and only import up to that point
@@ -90,6 +90,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
             await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
         } else {
             global.totalRows = Number(totalRowsSnapshot)
+            console.log('5 - global.totalRows (historical) : ', global.totalRows)
         }
     }
 
@@ -107,14 +108,28 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
 
     //offset : works --> number of new line
     //global
-    console.log('4 - offset : ', offset)
-    console.log('4 - global.initialOffset : ', global.initialOffset)
-    console.log('4 - cache.set :', cache.set)
+    console.log('5 - offset : ', offset)
+    console.log('5 - global.initialOffset : ', global.initialOffset)
+    console.log('5 - cache.set :', cache.set)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
+const getTotalRowsToImport = async (config) => {
+    console.log('const dedicated to count of number of row to import')
+    const tableName = sanitizeSqlIdentifier(config.tableName),
+          logTableName = sanitizeSqlIdentifier(config.logTableName)
+    const totalRowsResultBis = await executeQuery(
+        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
+        [],
+        config
+        console.log(config)
+    )
+    console.log('output : ', totalRowsResultBis.queryResult.rows[0].count)
+    return Number(totalRowsResultBis.queryResult.rows[0].count)
+}
 
+console.log('5 : ', getTotalRowsToImport)
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
@@ -164,23 +179,23 @@ const importAndIngestEvents = async (
         return
     }
     for (let key in payload) {
-        console.log('4 - ', key);
+        console.log('5 (keys) - ', key);
     }
 
-    console.log('4 - meta[global, cache, config, jobs] : ', meta.global, meta.cache, meta.config, meta.jobs)
+    console.log('5 - meta[global, cache, config, jobs] : ', meta.global, meta.cache, meta.config, meta.jobs)
     const { global, cache, config, jobs } = meta
-    console.log('4 - meta[global, cache, config, jobs] (after attribution) : ', meta.global, meta.cache, meta.config, meta.jobs)
+    console.log('5 - meta[global, cache, config, jobs] (after attribution) : ', meta.global, meta.cache, meta.config, meta.jobs)
 
     let offset: number
     if (payload.offset) {
-        console.log('4 - first condition of payload : ', payload.offset)
+        console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
-        console.log('4 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, 'offset : ', offset)
+        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, 'offset : ', offset)
     }
-    console.log('4 - offset, global.totalRows : ', offset, global.totalRows)
+    console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
     if (offset > global.totalRows) {
         console.log(`Done processing all rows in ${config.tableName}`)
         return
@@ -192,7 +207,7 @@ const importAndIngestEvents = async (
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
     const values = [offset]
-    console.log('4 - values : ', values)
+    console.log('5 - values : ', values)
     const queryResponse = await executeQuery(query, values, config)
     if (!queryResponse || queryResponse.error || !queryResponse.queryResult) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
@@ -221,6 +236,8 @@ const importAndIngestEvents = async (
     )
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
 }
+
+
 // Transformations can be added by any contributor
 // 'author' should be the contributor's GH username
 const transformations: TransformationsMap = {
@@ -271,3 +288,4 @@ const transformations: TransformationsMap = {
         }
     }
 }
+
