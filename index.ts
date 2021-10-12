@@ -51,7 +51,11 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
+
+console.log('test : random log (line 55)')
+
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
+    console.log('setupPlugin blablah')
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
@@ -61,6 +65,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
+    console.log('redshift check OK blablah')
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
@@ -83,7 +88,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         } else {
             global.totalRows = Number(totalRowsSnapshot)
         }
-    } 
+    }
 
 
     // used for picking up where we left off after a restart
@@ -93,6 +98,8 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
+
+
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
@@ -145,10 +152,10 @@ const importAndIngestEvents = async (
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
-    
+
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         meta.config.tableName
-    )} 
+    )}
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
     const values = [offset]
@@ -187,12 +194,12 @@ const transformations: TransformationsMap = {
         author: 'yakkomajuri',
         transform: async (row, _) => {
             const { timestamp, distinct_id, event, properties } = row
-            const eventToIngest = { 
-                event, 
+            const eventToIngest = {
+                event,
                 properties: {
-                    timestamp, 
-                    distinct_id, 
-                    ...JSON.parse(properties), 
+                    timestamp,
+                    distinct_id,
+                    ...JSON.parse(properties),
                     source: 'redshift_import',
                 }
             }
@@ -205,7 +212,7 @@ const transformations: TransformationsMap = {
             if (!attachments.rowToEventMap) {
                 throw new Error('Row to event mapping JSON file not provided!')
             }
-            
+
             let rowToEventMap: Record<string, string> = {}
             try {
                 rowToEventMap = JSON.parse(attachments.rowToEventMap.contents.toString())
@@ -214,7 +221,7 @@ const transformations: TransformationsMap = {
             }
             const eventToIngest = {
                 event: '',
-                properties: {} as Record<string, any> 
+                properties: {} as Record<string, any>
             }
             for (const [colName, colValue] of Object.entries(row)) {
                 if (!rowToEventMap[colName]) {
@@ -230,3 +237,4 @@ const transformations: TransformationsMap = {
         }
     }
 }
+
