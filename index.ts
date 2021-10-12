@@ -123,7 +123,6 @@ const getTotalRowsToImport = async (config) => {
         `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
         [],
         config
-        console.log(config)
     )
     console.log('output : ', totalRowsResultBis.queryResult.rows[0].count)
     return Number(totalRowsResultBis.queryResult.rows[0].count)
@@ -288,4 +287,3 @@ const transformations: TransformationsMap = {
         }
     }
 }
-
