@@ -69,7 +69,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
+        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id)`,
         [],
         config
     )
@@ -250,4 +250,3 @@ const transformations: TransformationsMap = {
         }
     }
 }
-
