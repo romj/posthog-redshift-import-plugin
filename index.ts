@@ -73,12 +73,14 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         [],
         config
     )
-    console.log('totalRowsResult (continuous importation) :', totalRowsResult)
+    console.log('totalRowsResult (continuous importation) bis:', totalRowsResult)
 
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
+
+    console.log('BIS - global.totalRows  :', global.totalRows)
 
     // if set to only import historical data, take a "snapshot" of the count
     // on the first run and only import up to that point
@@ -91,6 +93,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
+
     //At this stage we have defined global.totalRows : 
     //  1. If we select continuous import then totalRows = SELECT count(*) from table
     //  2. If we select historical import then totalRows = 
@@ -101,9 +104,13 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
-    console.log('cache.set :', cache.set)
+    console.log('BIS - offset : ', offset)
+    console.log('BIS - global.initialOffset : ', global.initialOffset)
+    console.log('BIS - cache.set :', cache.set)
+
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
+
 
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
@@ -250,3 +257,4 @@ const transformations: TransformationsMap = {
         }
     }
 }
+
