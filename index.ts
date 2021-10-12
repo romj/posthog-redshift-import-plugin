@@ -73,10 +73,11 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         [],
         config
     )
+    console.log('totalRowsResult (continuous importation) :', totalRowsResult)
+
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
-
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
 
     // if set to only import historical data, take a "snapshot" of the count
@@ -90,22 +91,32 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
+    //At this stage we have defined global.totalRows : 
+    //  1. If we select continuous import then totalRows = SELECT count(*) from table
+    //  2. If we select historical import then totalRows = 
 
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
+    console.log('REDIS OFFSET KEY :', REDIS_OFFSET_KEY)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
+    console.log('cache.set :', cache.set)
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
+    console.log('redisOffset :', redisOffset)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
+    console.log('workerOffset :', workerOffset)
     const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
+    console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
 }
+
+//EXECUTE QUERY FUNCTION
 const executeQuery = async (
     query: string,
     values: any[],
@@ -129,6 +140,7 @@ const executeQuery = async (
     await pgClient.end()
     return { error, queryResult }
 }
+
 const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
@@ -237,4 +249,5 @@ const transformations: TransformationsMap = {
         }
     }
 }
+
 
