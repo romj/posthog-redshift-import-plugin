@@ -142,7 +142,7 @@ const importAndIngestEvents = async (
     }
     console.log(offset, global.totalRows)
     if (offset > global.totalRows) {
-        console.log('Done processing all rows in ${config.tableName}')
+        console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
 
