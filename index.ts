@@ -73,7 +73,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         [],
         config
     )
-    console.log('totalRowsResult (continuous importation) bis:', totalRowsResult)
+    console.log('totalRowsResult (continuous importation) TER:', totalRowsResult)
 
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
@@ -104,6 +104,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
+
+    //offset : works --> number of new line
+    //global
     console.log('BIS - offset : ', offset)
     console.log('BIS - global.initialOffset : ', global.initialOffset)
     console.log('BIS - cache.set :', cache.set)
@@ -149,6 +152,7 @@ const executeQuery = async (
     return { error, queryResult }
 }
 
+
 const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
@@ -159,15 +163,24 @@ const importAndIngestEvents = async (
         }. Skipped them.`)
         return
     }
+    for (let key in payload) {
+        console.log('TER - ', key);
+    }
+
+    console.log('TER - meta[global, cache, config, jobs] : ', meta.global, meta.cache, meta.config, meta.jobs)
     const { global, cache, config, jobs } = meta
+    console.log('TER - meta[global, cache, config, jobs] (after attribution) : ', meta.global, meta.cache, meta.config, meta.jobs)
+
     let offset: number
     if (payload.offset) {
+        console.log('TER - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
+        console.log('TER - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, 'offset : ', offset)
     }
-    console.log(offset, global.totalRows)
+    console.log('TER - offset, global.totalRows : ', offset, global.totalRows)
     if (offset > global.totalRows) {
         console.log(`Done processing all rows in ${config.tableName}`)
         return
@@ -179,6 +192,7 @@ const importAndIngestEvents = async (
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
     const values = [offset]
+    console.log('TER - values : ', values)
     const queryResponse = await executeQuery(query, values, config)
     if (!queryResponse || queryResponse.error || !queryResponse.queryResult) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
@@ -257,4 +271,3 @@ const transformations: TransformationsMap = {
         }
     }
 }
-
