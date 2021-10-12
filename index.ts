@@ -69,7 +69,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)}`,
+        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
         [],
         config
     )
@@ -115,6 +115,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
 }
+// all the above log about offset are not triggered when historical importation 
 
 //EXECUTE QUERY FUNCTION
 const executeQuery = async (
@@ -249,5 +250,4 @@ const transformations: TransformationsMap = {
         }
     }
 }
-
 
