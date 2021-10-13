@@ -189,6 +189,7 @@ const importAndIngestEvents = async (
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
+        console.log('test')
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
