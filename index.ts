@@ -229,15 +229,28 @@ const importAndIngestEvents = async (
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
             .runIn(nextRetrySeconds, 'seconds')
     }
+    const eventIdsIngested = []
     const eventsToIngest: TransformedPluginEvent[] = []
+
     for (const row of queryResponse.queryResult!.rows) {
         const event = await transformations[config.transformationName].transform(row, meta)
         eventsToIngest.push(event)
     }
     for (const event of eventsToIngest) {
-       // console.log(event)
+        //console.log(event)
         posthog.capture(event.event, event.properties)
+        eventIdsIngested.push(event.id)
     }
+    console.log(eventIdsIngested)
+    const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
+    
+    const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
+        meta.config.logTableName
+    )}
+    (event_id, exported_at)
+    VALUES
+    ${joinedEventIds}`
+
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
             eventsToIngest.length > 1 ? 's' : ''
@@ -308,8 +321,8 @@ const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
         transform: async (row, _) => {
-            console.log('transforming')
-            console.log(row)
+            //console.log('transforming')
+            //console.log(row)
             const { event_id, timestamp, distinct_id, event, properties, set } = row
             console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
             const eventToIngest = {
@@ -324,9 +337,9 @@ const transformations: TransformationsMap = {
                     }
                 }
             }
-            console.log('eventToIngest')
-            console.log(eventToIngest)
-            console.log(`eventToIngest.event = ${eventToIngest.event}`)
+            //console.log('eventToIngest')
+            //console.log(eventToIngest)
+            //console.log(`eventToIngest.event = ${eventToIngest.event}`)
             return eventToIngest
         }
     }
