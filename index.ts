@@ -94,16 +94,12 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
-
-    //At this stage we have defined global.totalRows : 
-    //  1. If we select continuous import then totalRows = SELECT count(*) from table
-    //  2. If we select historical import then totalRows = 
-
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-    console.log('REDIS OFFSET KEY :', REDIS_OFFSET_KEY)
+    console.log('offset :', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
+    console.log('global.initialOffset : ', global.initialOffset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
 
     //offset : works --> number of new line
