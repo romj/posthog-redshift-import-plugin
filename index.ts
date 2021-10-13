@@ -44,7 +44,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_ter'
+const REDIS_OFFSET_KEY = 'import_offset_bis'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -90,6 +90,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
+    /*
 
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
@@ -105,7 +106,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
 
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')*/
 }
 
 /*
@@ -124,6 +125,8 @@ const getTotalRowsToImport = async (config) => {
 
 console.log('5 : ', getTotalRowsToImport)*/
 
+/*
+
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
     console.log('redisOffset :', redisOffset)
@@ -133,6 +136,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
 }
+*/
 
 // all the above log about offset are not triggered when historical importation 
 
@@ -281,5 +285,3 @@ const transformations: TransformationsMap = {
         }
     }
 }
-
-
