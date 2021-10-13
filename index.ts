@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_dz'
+const REDIS_OFFSET_KEY = 'import_offset_dze'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -199,8 +199,6 @@ const importAndIngestEvents = async (
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
-        test = test + 1
-        console.log('test #', test)
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
