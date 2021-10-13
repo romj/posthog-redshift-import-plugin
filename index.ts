@@ -59,8 +59,8 @@ let iteration: number
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
     iteration = iteration + 1
-    console.log('iteration #', iteration)
-    console.log('setupPlugin blablah')
+    //console.log('iteration #', iteration)
+    //console.log('setupPlugin blablah')
 
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
@@ -71,7 +71,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
-    console.log('redshift check OK blablah')
+    //console.log('redshift check OK blablah')
 
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
@@ -94,7 +94,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
             await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
         } else {
             global.totalRows = Number(totalRowsSnapshot)
-            console.log('5 - global.totalRows (historical) : ', global.totalRows)
+            //console.log('5 - global.totalRows (historical) : ', global.totalRows)
         }
     }
 
@@ -102,7 +102,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
 
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-    //console.log('offset : ', offset)
+    console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
@@ -139,7 +139,7 @@ console.log('5 : ', getTotalRowsToImport)*/
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
-    //réutilie la valeur de cache donnée plus tôt 
+    //réutilise la valeur de cache donnée plus tôt 
     console.log('redisOffset :', redisOffset)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
     //console.log('workerOffset :', workerOffset)
@@ -244,8 +244,8 @@ const importAndIngestEvents = async (
         eventIdsIngested.push(event.id)
     }
 
-    console.log('eventIdsIngested :', eventIdsIngested)
-    console.log('meta.config.logTableName :', meta.config.logTableName)
+    //console.log('eventIdsIngested :', eventIdsIngested)
+    //console.log('meta.config.logTableName :', meta.config.logTableName)
 
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
 
@@ -256,11 +256,11 @@ const importAndIngestEvents = async (
     VALUES
     ${joinedEventIds}`
 
-    console.log('insertQuery', insertQuery)
+    //console.log('insertQuery', insertQuery)
 
     const insertQueryResponse = await executeQuery(insertQuery, [], config)
     
-    console.log('insertQueryResponse', insertQueryResponse)
+    //console.log('insertQueryResponse', insertQueryResponse)
 
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
