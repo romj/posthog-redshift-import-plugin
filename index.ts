@@ -116,6 +116,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
 
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
 /*
@@ -178,6 +179,7 @@ const executeQuery = async (
 
 
 const importAndIngestEvents = async (
+    console('ingest')
     payload: ImportEventsJobPayload,
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
