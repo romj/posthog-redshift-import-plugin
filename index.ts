@@ -53,8 +53,15 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
+let iteration: number
+    iteration = 1
+
+
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
+    iteration = incr(iteration)
+    console.log('iteration #', iteration)
     console.log('setupPlugin blablah')
+
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
@@ -67,7 +74,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('redshift check OK blablah')
 
     // the way this is done means we'll continuously import as the table grows
-    // to only import historical data, we should set a totalRows value in storage oncef
+    // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
         `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id)`,
         [],
@@ -92,6 +99,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
 
     
+
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     //console.log('offset : ', offset)
