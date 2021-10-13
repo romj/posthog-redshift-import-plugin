@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_dzedez'
+const REDIS_OFFSET_KEY = 'import_offset_dze'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -99,7 +99,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
 
     
-
+    /*
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     console.log('offset : ', offset)
@@ -114,8 +114,14 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //global
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
-    // console.log('5 - cache.set :', cache.set)
-    
+    // console.log('5 - cache.set :', cache.set)*/
+
+    const offset = 0
+    global.initialOffset = Number(offset)
+    await cache.set(Math.ceil(Number(offset) / EVENTS_PER_BATCH)
+    console.log('cache set :', Math.ceil(Number(offset) / EVENTS_PER_BATCH)
+
+
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
@@ -138,6 +144,7 @@ console.log('5 : ', getTotalRowsToImport)*/
 
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
+    console.log('teardown')
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
     //réutilise la valeur de cache donnée plus tôt 
     console.log('redisOffset :', redisOffset)
@@ -260,7 +267,7 @@ const importAndIngestEvents = async (
 
     const insertQueryResponse = await executeQuery(insertQuery, [], config)
     
-    //console.log('insertQueryResponse', insertQueryResponse)
+    console.log('insertQueryResponse', insertQueryResponse)
 
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
