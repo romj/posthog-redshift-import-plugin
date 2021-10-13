@@ -209,7 +209,7 @@ const importAndIngestEvents = async (
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
-
+    console.log('offset for query :', offset)
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         meta.config.tableName
     )}
@@ -218,9 +218,36 @@ const importAndIngestEvents = async (
 
     const values = [offset]
     //console.log('5 - values : ', values)
+
+
     const queryResponse = await executeQuery(query, values, config)
-    if (!queryResponse || queryResponse.error || !queryResponse.queryResult) {
+    if (!queryResponse ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
+        console.log('A')
+        console.log(
+            `Unable to process rows ${offset}-${
+                offset + EVENTS_PER_BATCH
+            }. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
+        )
+        await jobs
+            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
+            .runIn(nextRetrySeconds, 'seconds')
+    }
+    if (queryResponse.error ) {
+        const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
+        console.log('B')
+        console.log(
+            `Unable to process rows ${offset}-${
+                offset + EVENTS_PER_BATCH
+            }. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
+        )
+        await jobs
+            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
+            .runIn(nextRetrySeconds, 'seconds')
+    }
+    if (!queryResponse.queryResult ) {
+        const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
+        console.log('C')
         console.log(
             `Unable to process rows ${offset}-${
                 offset + EVENTS_PER_BATCH
