@@ -252,7 +252,7 @@ const importAndIngestEvents = async (
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
 }
 
-
+/*
 // Transformations can be added by any contributor
 // 'author' should be the contributor's GH username
 const transformations: TransformationsMap = {
@@ -299,6 +299,34 @@ const transformations: TransformationsMap = {
                     eventToIngest.properties[rowToEventMap[colName]] = colValue
                 }
             }
+            return eventToIngest
+        }
+    }
+}
+*/
+const transformations: TransformationsMap = {
+    'default': {
+        author: 'yakkomajuri',
+        transform: async (row, _) => {
+            console.log('transforming')
+            console.log(row)
+            const { event_id, timestamp, distinct_id, event, properties, set } = row
+            console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
+            const eventToIngest = {
+                "event": event,
+                id:event_id,
+                properties: {
+                    distinct_id,
+                    timestamp,
+                    ...JSON.parse(properties),
+                    "$set": {
+                        ...JSON.parse(set)
+                    }
+                }
+            }
+            console.log('eventToIngest')
+            console.log(eventToIngest)
+            console.log(`eventToIngest.event = ${eventToIngest.event}`)
             return eventToIngest
         }
     }
