@@ -66,7 +66,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('redshift check OK blablah')
 
     // the way this is done means we'll continuously import as the table grows
-    // to only import historical data, we should set a totalRows value in storage once
+    // to only import historical data, we should set a totalRows value in storage oncef
     const totalRowsResult = await executeQuery(
         `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id)`,
         [],
@@ -90,22 +90,22 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
-    /*
-
+    
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     //console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
-    //console.log('global.initialOffset : ', global.initialOffset)
+    console.log('global.initialOffset 1/2 : ', global.initialOffset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
+    //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
     //global
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
-    */
+    
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
@@ -125,10 +125,11 @@ const getTotalRowsToImport = async (config) => {
 
 console.log('5 : ', getTotalRowsToImport)*/
 
-/*
+
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
+    //réutilie la valeur de cache donnée plus tôt 
     console.log('redisOffset :', redisOffset)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
     //console.log('workerOffset :', workerOffset)
@@ -136,7 +137,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
 }
-*/
+
 
 // all the above log about offset are not triggered when historical importation 
 
@@ -189,8 +190,8 @@ const importAndIngestEvents = async (
         offset = payload.offset
     } else {
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
+        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
-        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, 'offset : ', offset)
     }
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
     if (offset > global.totalRows) {
