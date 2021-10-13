@@ -97,6 +97,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
+    console.log(Number(offset) / EVENTS_PER_BATCH)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
