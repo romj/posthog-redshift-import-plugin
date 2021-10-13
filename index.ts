@@ -119,7 +119,6 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     const offset = 0
     global.initialOffset = Number(offset)
     await cache.set(Math.ceil(Number(offset) / EVENTS_PER_BATCH)
-    console.log('cache value', Math.ceil(Number(offset) / EVENTS_PER_BATCH))
 
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
