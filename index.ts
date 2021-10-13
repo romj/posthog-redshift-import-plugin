@@ -101,7 +101,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     
     
     // used for picking up where we left off after a restart
-    const offset = 0
+    const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
@@ -115,7 +115,6 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
-
 
 }
 
