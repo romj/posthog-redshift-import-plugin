@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_7'
+const REDIS_OFFSET_KEY = 'import_offset_6'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -229,21 +229,27 @@ const importAndIngestEvents = async (
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
             .runIn(nextRetrySeconds, 'seconds')
     }
-    const eventIdsIngested = []
+
     const eventsToIngest: TransformedPluginEvent[] = []
 
     for (const row of queryResponse.queryResult!.rows) {
         const event = await transformations[config.transformationName].transform(row, meta)
         eventsToIngest.push(event)
     }
+    
+    const eventIdsIngested = []    
+
     for (const event of eventsToIngest) {
         //console.log(event)
         posthog.capture(event.event, event.properties)
         eventIdsIngested.push(event.id)
     }
-    console.log(eventIdsIngested)
+
+    console.log('eventIdsIngested :', eventIdsIngested)
+    console;log('meta.config.logTableName :', meta.config.logTableName)
+
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
-    
+
     const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
         meta.config.logTableName
     )}
@@ -251,11 +257,18 @@ const importAndIngestEvents = async (
     VALUES
     ${joinedEventIds}`
 
+    console.log(insertQuery)
+
+    const insertQueryResponse = await executeQuery(insertQuery, [], config)
+    
+    console.log(insertQueryResponse)
+
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
             eventsToIngest.length > 1 ? 's' : ''
         } from them.`
     )
+    
     if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
         console.log('finished ingested')
         return 
