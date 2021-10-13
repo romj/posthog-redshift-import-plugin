@@ -44,7 +44,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_ter'
+const REDIS_OFFSET_KEY = 'import_offset_bis'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -52,10 +52,8 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
-console.log('test : random log (line 55)')
-
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    console.log('setupPlugin blablah')
+    //console.log('setupPlugin blablah')
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
@@ -66,6 +64,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
     console.log('redshift check OK blablah')
+
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
     const totalRowsResult = await executeQuery(
@@ -73,14 +72,11 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         [],
         config
     )
-    console.log('totalRowsResult (continuous importation) TER:', totalRowsResult)
-
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-
-    console.log('5 - global.totalRows  :', global.totalRows)
+    //console.log('Rows to import  :', global.totalRows)
 
     // if set to only import historical data, take a "snapshot" of the count
     // on the first run and only import up to that point
@@ -94,23 +90,25 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
+
     // used for picking up where we left off after a restart
     const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-    console.log('offset :', offset)
+    //console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
-    console.log('global.initialOffset : ', global.initialOffset)
+    //console.log('global.initialOffset : ', global.initialOffset)
     await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
 
     //offset : works --> number of new line
     //global
-    console.log('5 - offset : ', offset)
-    console.log('5 - global.initialOffset : ', global.initialOffset)
-    console.log('5 - cache.set :', cache.set)
+    //console.log('5 - offset : ', offset)
+    // console.log('5 - global.initialOffset : ', global.initialOffset)
+    // console.log('5 - cache.set :', cache.set)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
+/*
 const getTotalRowsToImport = async (config) => {
     console.log('const dedicated to count of number of row to import')
     const tableName = sanitizeSqlIdentifier(config.tableName),
@@ -124,17 +122,18 @@ const getTotalRowsToImport = async (config) => {
     return Number(totalRowsResultBis.queryResult.rows[0].count)
 }
 
-console.log('5 : ', getTotalRowsToImport)
+console.log('5 : ', getTotalRowsToImport)*/
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
     console.log('redisOffset :', redisOffset)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
-    console.log('workerOffset :', workerOffset)
+    //console.log('workerOffset :', workerOffset)
     const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
     console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
 }
+
 // all the above log about offset are not triggered when historical importation 
 
 //EXECUTE QUERY FUNCTION
@@ -165,6 +164,7 @@ const executeQuery = async (
 
 const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
+    //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
@@ -173,15 +173,13 @@ const importAndIngestEvents = async (
         }. Skipped them.`)
         return
     }
-    for (let key in payload) {
-        console.log('5 (keys) - ', key);
-    }
 
     console.log('5 - meta[global, cache, config, jobs] : ', meta.global, meta.cache, meta.config, meta.jobs)
     const { global, cache, config, jobs } = meta
     console.log('5 - meta[global, cache, config, jobs] (after attribution) : ', meta.global, meta.cache, meta.config, meta.jobs)
 
     let offset: number
+    console.log('payload.offset (182): ', payload.offset)
     if (payload.offset) {
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
@@ -202,7 +200,7 @@ const importAndIngestEvents = async (
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
     const values = [offset]
-    console.log('5 - values : ', values)
+    //console.log('5 - values : ', values)
     const queryResponse = await executeQuery(query, values, config)
     if (!queryResponse || queryResponse.error || !queryResponse.queryResult) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
@@ -221,7 +219,7 @@ const importAndIngestEvents = async (
         eventsToIngest.push(event)
     }
     for (const event of eventsToIngest) {
-        console.log(event)
+       // console.log(event)
         posthog.capture(event.event, event.properties)
     }
     console.log(
@@ -283,4 +281,5 @@ const transformations: TransformationsMap = {
         }
     }
 }
+
 
