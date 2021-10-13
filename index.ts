@@ -179,7 +179,7 @@ const executeQuery = async (
 
 
 const importAndIngestEvents = async (
-    console('ingest')
+    console.log('ingest')
     payload: ImportEventsJobPayload,
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
