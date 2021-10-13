@@ -179,11 +179,11 @@ const executeQuery = async (
 
 
 const importAndIngestEvents = async (
-    console.log('ingest')
     payload: ImportEventsJobPayload,
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
+    console.log('ingestion')
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
