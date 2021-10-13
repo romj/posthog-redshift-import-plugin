@@ -99,9 +99,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
 
     
-    /*
+    
     // used for picking up where we left off after a restart
-    const offset = await storage.get(REDIS_OFFSET_KEY, 0)
+    const offset = 0
     console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
@@ -114,14 +114,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //global
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
-    // console.log('5 - cache.set :', cache.set)*/
-
-    const offset = 0
-    global.initialOffset = Number(offset)
-    await cache.set(Math.ceil(Number(offset) / EVENTS_PER_BATCH)
+    // console.log('5 - cache.set :', cache.set)
 
 
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
 /*
