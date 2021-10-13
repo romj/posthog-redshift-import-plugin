@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_12'
+const REDIS_OFFSET_KEY = 'import_offset_dz'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -199,7 +199,8 @@ const importAndIngestEvents = async (
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
-        console.log('test')
+        test = test + 1
+        console.log('test #', test)
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
@@ -246,7 +247,7 @@ const importAndIngestEvents = async (
     }
 
     console.log('eventIdsIngested :', eventIdsIngested)
-    console;log('meta.config.logTableName :', meta.config.logTableName)
+    console.log('meta.config.logTableName :', meta.config.logTableName)
 
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
 
@@ -257,18 +258,18 @@ const importAndIngestEvents = async (
     VALUES
     ${joinedEventIds}`
 
-    console.log(insertQuery)
+    console.log('insertQuery', insertQuery)
 
     const insertQueryResponse = await executeQuery(insertQuery, [], config)
     
-    console.log(insertQueryResponse)
+    console.log('insertQueryResponse', insertQueryResponse)
 
     console.log(
         `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
             eventsToIngest.length > 1 ? 's' : ''
         } from them.`
     )
-    
+
     if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
         console.log('finished ingested')
         return 
