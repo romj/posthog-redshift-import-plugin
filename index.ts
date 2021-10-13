@@ -58,7 +58,7 @@ let iteration: number
 
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    iteration = incr(iteration)
+    iteration = incr + 1
     console.log('iteration #', iteration)
     console.log('setupPlugin blablah')
 
