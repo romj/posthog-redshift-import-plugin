@@ -200,9 +200,10 @@ const importAndIngestEvents = async (
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
         console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffset)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
+        console.log('redis version of offset :', offset)
     }
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
-    if (offset > global.totalRows) {
+    if (offset > global.totalRows || global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
