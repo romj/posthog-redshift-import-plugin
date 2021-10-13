@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_4'
+const REDIS_OFFSET_KEY = 'import_offset_bis'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -193,7 +193,7 @@ const importAndIngestEvents = async (
     } else {
         console.log('test')
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
-        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffset)
+        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
     }
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
@@ -235,6 +235,12 @@ const importAndIngestEvents = async (
             eventsToIngest.length > 1 ? 's' : ''
         } from them.`
     )
+    if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
+        console.log('finished ingested')
+        return 
+    }
+
+    
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
 }
 
