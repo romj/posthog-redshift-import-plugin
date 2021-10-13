@@ -188,19 +188,17 @@ const importAndIngestEvents = async (
         }. Skipped them.`)
         return
     }
-
-    console.log('5 - meta[global, cache, config, jobs] : ', meta.global, meta.cache, meta.config, meta.jobs)
+    
     const { global, cache, config, jobs } = meta
-    console.log('5 - meta[global, cache, config, jobs] (after attribution) : ', meta.global, meta.cache, meta.config, meta.jobs)
 
     let offset: number
-    console.log('payload.offset (182): ', payload.offset)
+    console.log('payload.offset (197): ', payload.offset)
     if (payload.offset) {
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
         const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
-        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffse)
+        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffset)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
     }
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
@@ -213,7 +211,8 @@ const importAndIngestEvents = async (
         meta.config.tableName
     )}
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
-    OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
+    OFFSET ${offset} LIMIT ${EVENTS_PER_BATCH}`
+
     const values = [offset]
     //console.log('5 - values : ', values)
     const queryResponse = await executeQuery(query, values, config)
