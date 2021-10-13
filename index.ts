@@ -44,7 +44,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_bis'
+const REDIS_OFFSET_KEY = 'import_offset_ter'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -63,7 +63,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
-    console.log('redshift check OK blablah')
+    //console.log('redshift check OK blablah')
 
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
