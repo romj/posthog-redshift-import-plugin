@@ -53,7 +53,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 }
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    //console.log('setupPlugin blablah')
+    console.log('setupPlugin blablah')
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
@@ -63,7 +63,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
-    //console.log('redshift check OK blablah')
+    console.log('redshift check OK blablah')
 
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
@@ -76,7 +76,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-    //console.log('Rows to import  :', global.totalRows)
+    console.log('Rows to import  :', global.totalRows)
 
     // if set to only import historical data, take a "snapshot" of the count
     // on the first run and only import up to that point
