@@ -105,8 +105,8 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
-
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')*/
+    */
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
 
 /*
