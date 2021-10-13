@@ -1,5 +1,6 @@
 import { Plugin, PluginEvent, PluginMeta } from '@posthog/plugin-scaffold'
 import { Client, QueryResult, QueryResultRow } from 'pg'
+
 declare namespace posthog {
     function capture(event: string, properties?: Record<string, any>): void
 }
@@ -98,7 +99,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     global.initialOffset = Number(offset)
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
     console.log(Number(offset) / EVENTS_PER_BATCH)
-    await cache.set(REDIS_OFFSET_KEY, Number(offset) / EVENTS_PER_BATCH)
+    await cache.set(REDIS_OFFSET_KEY, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
