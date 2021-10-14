@@ -47,7 +47,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'dzedez'
+const IS_CURRENTLY_IMPORTING = 'redshift_import_currently'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -125,6 +125,10 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
+    if (storage.get(IS_CURRENTLY_IMPORTING === true) {
+        return
+    }
+    cache.set(IS_CURRENTLY_IMPORTING, true)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 }
@@ -146,18 +150,18 @@ const getTotalRowsToImport = async (config) => {
 console.log('5 : ', getTotalRowsToImport)*/
 
 
-/*
+
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     console.log('teardown')
-    const redisOffset = await cache.get(offset, 0)
+    //const redisOffset = await cache.get(offset, 0)
     //réutilise la valeur de cache donnée plus tôt 
-    console.log('redisOffset :', redisOffset)
-    const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
+    //console.log('redisOffset :', redisOffset)
+    //const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
     //console.log('workerOffset :', workerOffset)
-    const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
-    console.log('offsetToStore :', offsetToStore)
-    await storage.set(REDIS_OFFSET_KEY, offsetToStore)
-}*/
+    //const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
+    //console.log('offsetToStore :', offsetToStore)
+    await cache.set(IS_CURRENTLY_IMPORTING, false)
+}
 
 
 // all the above log about offset are not triggered when historical importation 
@@ -198,7 +202,8 @@ const importAndIngestEvents = async (
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
         }. Skipped them.`)
-        return
+        cache.set(IS_CURRENTLY_IMPORTING, false)
+        return 
     }
     
     const { global, cache, config, jobs } = meta
@@ -217,6 +222,7 @@ const importAndIngestEvents = async (
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
+        global.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
     console.log('offset for query :', offset)
@@ -314,6 +320,7 @@ const importAndIngestEvents = async (
 
     if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
         console.log('finished ingested')
+        global.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
 
