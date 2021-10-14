@@ -130,8 +130,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     const test = cache.get(offset)
     //console.log('cache offset, ', test)
 
+    const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
+    console.log('storage, ', initialValue)
 
-    console.log('storage, ', storage.get(IS_CURRENTLY_IMPORTING))
     if (storage.get(IS_CURRENTLY_IMPORTING) === true) {
         return
     }
@@ -139,7 +140,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     cache.set(IS_CURRENTLY_IMPORTING, true)
     
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
-    console.log('after job run ,', cache.get(IS_CURRENTLY_IMPORTING))
+
+    const endValue = await cache.get(IS_CURRENTLY_IMPORTING)
+    console.log('after job run value, ', endValue)
 }
 
 /*
@@ -169,6 +172,9 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     //console.log('workerOffset :', workerOffset)
     //const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
     //console.log('offsetToStore :', offsetToStore)
+    const beforeTearDown = await cache.get(IS_CURRENTLY_IMPORTING)
+    console.log('value before teardown')
+
     await cache.set(IS_CURRENTLY_IMPORTING, false)
 }
 
@@ -206,6 +212,9 @@ const importAndIngestEvents = async (
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
+    const beginningOfIngestion = await cache.get(IS_CURRENTLY_IMPORTING)
+    consol.log('value at beginning of ingestion', beginningOfIngestion)
+    
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
