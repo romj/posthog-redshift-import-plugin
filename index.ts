@@ -21,6 +21,8 @@ type RedshiftImportPlugin = Plugin<{
         dbPassword: string
         eventsToIgnore: string
         orderByColumn: string
+        eventLogTableName: string
+        pluginLogTableName: string
         transformationName: string
         importMechanism: 'Import continuously' | 'Only import historical data'
     }
@@ -49,12 +51,23 @@ const REDIS_OFFSET_KEY = 'dzedez'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
+const logMessage = async (message, config, logToRedshift = false) => {
+    console.log('logMessage')
+    console.log(message)
+    if (logToRedshift) {
+        console.log(query)
+        const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
+        const queryResponse = await executeQuery(query, [message], config)
+        console.log(queryResponse)
+    }
+}
+
 export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    //console.log('setupPlugin blablah')
+    await logMessage(‘setupPlugin’, config, false)
 
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
@@ -208,11 +221,11 @@ const importAndIngestEvents = async (
     }
     console.log('offset for query :', offset)
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
-        meta.config.tableName
+        config.tableName
     )}
     WHERE NOT EXISTS (
-        SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} 
-        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id
+        SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} 
+        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id
         )
     ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
     LIMIT ${EVENTS_PER_BATCH}`
@@ -281,7 +294,7 @@ const importAndIngestEvents = async (
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
 
     const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
-        meta.config.logTableName
+        meta.config.eventLogTableName
     )}
     (event_id, exported_at)
     VALUES
