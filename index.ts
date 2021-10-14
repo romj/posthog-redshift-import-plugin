@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_dzdeerfe'
+const REDIS_OFFSET_KEY = 'import_offset_dze'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -214,7 +214,7 @@ const importAndIngestEvents = async (
         meta.config.tableName
     )}
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
-    OFFSET $0 LIMIT ${EVENTS_PER_BATCH}`
+    OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
 
     const values = [offset]
     //console.log('5 - values : ', values)
