@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'import_offset_dzferoirte'
+const REDIS_OFFSET_KEY = 0
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -53,13 +53,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
-let iteration: number
-    iteration = 1
-
-
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    iteration = iteration + 1
-    //console.log('iteration #', iteration)
     //console.log('setupPlugin blablah')
 
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
