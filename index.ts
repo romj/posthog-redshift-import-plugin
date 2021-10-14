@@ -67,7 +67,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 }
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    await logMessage(‘setupPlugin’, config, false)
+    await logMessage('setupPlugin', config, false)
 
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
