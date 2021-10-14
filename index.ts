@@ -197,7 +197,6 @@ const importAndIngestEvents = async (
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-    console.log('ingestion')
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
@@ -209,17 +208,7 @@ const importAndIngestEvents = async (
     const { global, cache, config, jobs } = meta
     
     let offset: number
-    console.log('payload.offset (197): ', payload.offset)
-    if (payload.offset) {
-        console.log('5 - first condition of payload : ', payload.offset)
-        offset = payload.offset
-    } else {
-        const redisIncrementedOffset = offset + 1
-        console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffset)
-        offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
-        console.log('redis version of offset :', offset)
-    }
-    console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
+   
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
         global.set(IS_CURRENTLY_IMPORTING, false)
@@ -293,7 +282,10 @@ const importAndIngestEvents = async (
         posthog.capture(event.event, event.properties)
         eventIdsIngested.push(event.id)
     }
+    global.totalRows = global.totalRows - eventIdsIngested.length
 
+    console.log('updated total rows :', global.totalRows)
+    
     //console.log('eventIdsIngested :', eventIdsIngested)
     //console.log('meta.config.logTableName :', meta.config.logTableName)
 
