@@ -53,7 +53,7 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 }
 const logMessage = async (message, config, logToRedshift = false) => {
     //console.log('logMessage')
-    console.log(message)
+    //console.log(message)
     if (logToRedshift) {
         const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
         //console.log(query)
@@ -214,7 +214,7 @@ const importAndIngestEvents = async (
         cache.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
-    console.log('offset for query :', offset)
+    //console.log('offset for query :', offset)
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         config.tableName
     )}
@@ -225,7 +225,7 @@ const importAndIngestEvents = async (
     ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
     LIMIT ${EVENTS_PER_BATCH}`
 
-    console.log("query :", query)
+    //console.log("query :", query)
 
     //console.log('5 - values : ', values)
 
