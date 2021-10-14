@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'dzezef'
+const REDIS_OFFSET_KEY = 'dzedez'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -209,9 +209,12 @@ const importAndIngestEvents = async (
     )}
     WHERE NOT EXISTS (
         SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} 
-        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id)
-    ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
-    OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
+        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id
+        )
+    ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
+    LIMIT ${EVENTS_PER_BATCH}`
+
+    console.log("query :", query)
 
     const values = [offset]
     //console.log('5 - values : ', values)
