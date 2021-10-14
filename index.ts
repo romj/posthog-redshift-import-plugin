@@ -101,7 +101,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     global.initialOffset = Number(offset)
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
     console.log(Number(offset) / EVENTS_PER_BATCH)
-    await cache.set(0, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
+    await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
