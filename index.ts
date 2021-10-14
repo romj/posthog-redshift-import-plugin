@@ -47,7 +47,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const IS_CURRENTLY_IMPORTING = 'redshift_import_currently'
+const IS_CURRENTLY_IMPORTING = 'redshift_import'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -177,6 +177,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     console.log('value before teardown')
 
     await cache.set(IS_CURRENTLY_IMPORTING, false)
+    console.log('teardown finished')
 }
 
 
