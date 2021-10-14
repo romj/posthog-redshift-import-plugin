@@ -125,7 +125,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
-    if (storage.get(IS_CURRENTLY_IMPORTING === true) {
+    if (storage.get(IS_CURRENTLY_IMPORTING) === true) {
         return
     }
     cache.set(IS_CURRENTLY_IMPORTING, true)
