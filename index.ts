@@ -215,7 +215,7 @@ const importAndIngestEvents = async (
         console.log('redis version of offset :', offset)
     }
     console.log('5 - offset, global.totalRows : ', offset, global.totalRows)
-    if (offset > global.totalRows || global.totalRows < 1)  {
+    if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
         return
     }
