@@ -52,13 +52,13 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
 const logMessage = async (message, config, logToRedshift = false) => {
-    console.log('logMessage')
+    //console.log('logMessage')
     console.log(message)
     if (logToRedshift) {
         const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
-        console.log(query)
+        //console.log(query)
         const queryResponse = await executeQuery(query, [message], config)
-        console.log(queryResponse)
+        //console.log(queryResponse)
     }
 }
 
@@ -109,15 +109,15 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     
     // used for picking up where we left off after a restart
     //const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-    console.log('offset : ', offset)
+    //console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
-    console.log('global.initialOffset 1/2 : ', global.initialOffset)
-    console.log(Number(offset) / EVENTS_PER_BATCH)
+    //console.log('global.initialOffset 1/2 : ', global.initialOffset)
+    //console.log(Number(offset) / EVENTS_PER_BATCH)
     await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
     const test = cache.get(offset)
-    console.log('new offset :', test)
-    console.log('offset as defined :', offset)
+    //console.log('new offset :', test)
+    //console.log('offset as defined :', offset)
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
