@@ -212,9 +212,9 @@ const importAndIngestEvents = async (
     //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-    const beginningOfIngestion = await cache.get(IS_CURRENTLY_IMPORTING)
-    consol.log('value at beginning of ingestion', beginningOfIngestion)
-    
+    //const beginningOfIngestion = await cache.get(IS_CURRENTLY_IMPORTING)
+    //consol.log('value at beginning of ingestion', beginningOfIngestion)
+
     if (payload.offset && payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
