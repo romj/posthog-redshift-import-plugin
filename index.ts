@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 'dzedezscf'
+const REDIS_OFFSET_KEY = 'dzedez'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -92,16 +92,16 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         }
     }
 
-    
+    const offset = 0
     
     // used for picking up where we left off after a restart
-    const offset = await storage.get(REDIS_OFFSET_KEY, 0)
+    //const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
     global.initialOffset = Number(offset)
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
     console.log(Number(offset) / EVENTS_PER_BATCH)
-    await cache.set(REDIS_OFFSET_KEY, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
+    await cache.set(0, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
