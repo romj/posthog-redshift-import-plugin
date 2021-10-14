@@ -134,6 +134,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('storage, ', initialValue)
 
     if (initialValue === true) {
+        console.log('EXIT due to initial value = true')
         return
     }
 
