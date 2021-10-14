@@ -102,7 +102,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
     console.log(Number(offset) / EVENTS_PER_BATCH)
     await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
-    console.log('new offset :', cache.get(offset))
+    const test = cache.get(offset)
+    console.log('new offset :', test)
+    console.log('offset as defined :', offset)
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
@@ -131,7 +133,7 @@ const getTotalRowsToImport = async (config) => {
 console.log('5 : ', getTotalRowsToImport)*/
 
 
-
+/*
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     console.log('teardown')
     const redisOffset = await cache.get(offset, 0)
@@ -142,7 +144,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
     console.log('offsetToStore :', offsetToStore)
     await storage.set(REDIS_OFFSET_KEY, offsetToStore)
-}
+}*/
 
 
 // all the above log about offset are not triggered when historical importation 
@@ -187,7 +189,7 @@ const importAndIngestEvents = async (
     }
     
     const { global, cache, config, jobs } = meta
-
+    
     let offset: number
     console.log('payload.offset (197): ', payload.offset)
     if (payload.offset) {
