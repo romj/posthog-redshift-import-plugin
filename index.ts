@@ -211,7 +211,7 @@ const importAndIngestEvents = async (
    
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
-        global.set(IS_CURRENTLY_IMPORTING, false)
+        cache.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
     console.log('offset for query :', offset)
@@ -312,7 +312,7 @@ const importAndIngestEvents = async (
 
     if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
         console.log('finished ingested')
-        global.set(IS_CURRENTLY_IMPORTING, false)
+        cache.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
 
