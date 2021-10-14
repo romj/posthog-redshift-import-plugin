@@ -20,7 +20,8 @@ type RedshiftImportPlugin = Plugin<{
         tableName: string
         dbUsername: string
         dbPassword: string
-        logTableName: string
+        eventLogTableName: string
+        pluginLogTableName: string
         eventsToIgnore: string
         orderByColumn: string
         transformationName: string
@@ -62,10 +63,13 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 }
 
 const logMessage = async (message, config, logToRedshift = false) => {
+    console.log('logMessage')
     console.log(message)
     if (logToRedshift) {
-        const query = 'INSERT INTO src_posthog.plugin_run_log (event_at, message) VALUES (GETDATE(), $1)'
+        console.log(query)
+        const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
         const queryResponse = await executeQuery(query, [message], config)
+        console.log(queryResponse)
     }
 }
 
@@ -81,12 +85,10 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
             throw new Error(`Required config option ${option} is missing!`)
         }
     }
-    console.log('requiredConfigOptions OK')
+
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
-
-    console.log('redshift check OK')
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(5, 'seconds')
 }
@@ -129,9 +131,9 @@ const executeQuery = async (
 
 const getTotalRowsToImport = async (config) => {
     const tableName = sanitizeSqlIdentifier(config.tableName),
-          logTableName = sanitizeSqlIdentifier(config.logTableName)
+          eventLogTableName = sanitizeSqlIdentifier(config.eventLogTableName)
     const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
+        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${eventLogTableName} WHERE ${tableName}.event_id = ${eventLogTableName}.event_id)`,
         [],
         config
     )
@@ -221,7 +223,7 @@ const importAndIngestEvents = async (
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
     
     const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
-        meta.config.logTableName
+        meta.config.eventLogTableName
     )} 
     (event_id, exported_at)
     VALUES
