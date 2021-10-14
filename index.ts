@@ -216,11 +216,10 @@ const importAndIngestEvents = async (
 
     console.log("query :", query)
 
-    const values = [offset]
     //console.log('5 - values : ', values)
 
 
-    const queryResponse = await executeQuery(query, values, config)
+    const queryResponse = await executeQuery(query, [], config)
     if (!queryResponse ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
         console.log('A')
