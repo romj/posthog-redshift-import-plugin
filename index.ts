@@ -133,7 +133,7 @@ console.log('5 : ', getTotalRowsToImport)*/
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     console.log('teardown')
-    const redisOffset = await cache.get(REDIS_OFFSET_KEY, 0)
+    const redisOffset = await cache.get(offset, 0)
     //réutilise la valeur de cache donnée plus tôt 
     console.log('redisOffset :', redisOffset)
     const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
