@@ -176,7 +176,7 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     const beforeTearDown = await cache.get(IS_CURRENTLY_IMPORTING)
     console.log('value before teardown', beforeTearDown)
 
-    await cache.set(IS_CURRENTLY_IMPORTING, false)
+    await storage.set(IS_CURRENTLY_IMPORTING, false)
     console.log('teardown finished')
 }
 
