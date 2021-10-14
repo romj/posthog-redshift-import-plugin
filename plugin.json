@@ -60,11 +60,18 @@
             "default": "event_at"
         },
         {
-            "key": "logTableName",
+            "key": "eventLogTableName",
             "hint": "This is the table where the plugin will drop the event IDs that were successfully imported.",
-            "name": "Import Table name",
+            "name": "Imported Events Table name",
             "type": "string",
             "default": "src_posthog.exported_events_log"
+        },
+        {
+            "key": "pluginLogTableName",
+            "hint": "This is the table where the plugin send some plugin-logs for troubleshooting.",
+            "name": "Plugin Logs Table name",
+            "type": "string",
+            "default": "src_posthog.plugin_run_log"
         },
         {
             "key": "transformationName",
