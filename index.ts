@@ -102,6 +102,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('global.initialOffset 1/2 : ', global.initialOffset)
     console.log(Number(offset) / EVENTS_PER_BATCH)
     await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
+    console.log('new offset :', cache.get(offset))
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
 
     //offset : works --> number of new line
@@ -193,7 +194,7 @@ const importAndIngestEvents = async (
         console.log('5 - first condition of payload : ', payload.offset)
         offset = payload.offset
     } else {
-        const redisIncrementedOffset = await cache.incr(REDIS_OFFSET_KEY)
+        const redisIncrementedOffset = await cache.incr(offset)
         console.log('5 - 2nd condition of payload : redisIncremented : ', redisIncrementedOffset, global.initialOffset)
         offset = global.initialOffset + (redisIncrementedOffset - 1) * EVENTS_PER_BATCH
         console.log('redis version of offset :', offset)
