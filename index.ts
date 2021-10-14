@@ -111,26 +111,35 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     //const offset = await storage.get(REDIS_OFFSET_KEY, 0)
     //console.log('offset : ', offset)
     // needed to prevent race conditions around offsets leading to events ingested twice
-    global.initialOffset = Number(offset)
     //console.log('global.initialOffset 1/2 : ', global.initialOffset)
     //console.log(Number(offset) / EVENTS_PER_BATCH)
-    await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
-    const test = cache.get(offset)
     //console.log('new offset :', test)
     //console.log('offset as defined :', offset)
     //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
-
+    
     //offset : works --> number of new line
     //global
     //console.log('5 - offset : ', offset)
     // console.log('5 - global.initialOffset : ', global.initialOffset)
     // console.log('5 - cache.set :', cache.set)
+
+    global.initialOffset = Number(offset)
+    //console.log('global.initialOffset, ',global.initialOffset)
+
+    await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
+    const test = cache.get(offset)
+    //console.log('cache offset, ', test)
+
+
+    console.log('storage, ', storage.get(IS_CURRENTLY_IMPORTING))
     if (storage.get(IS_CURRENTLY_IMPORTING) === true) {
         return
     }
-    cache.set(IS_CURRENTLY_IMPORTING, true)
 
+    cache.set(IS_CURRENTLY_IMPORTING, true)
+    
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    console.log('after job run ,', cache.get(IS_CURRENTLY_IMPORTING))
 }
 
 /*
