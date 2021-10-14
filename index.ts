@@ -47,7 +47,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const IS_CURRENTLY_IMPORTING = 'redshift_importation'
+const IS_CURRENTLY_IMPORTING = 'redshift_importats'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -221,7 +221,7 @@ const importAndIngestEvents = async (
         console.error(`Import error: Unable to process rows ${payload.offset}-${
             payload.offset + EVENTS_PER_BATCH
         }. Skipped them.`)
-        cache.set(IS_CURRENTLY_IMPORTING, false)
+        await cache.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
     
@@ -231,7 +231,7 @@ const importAndIngestEvents = async (
    
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
-        cache.set(IS_CURRENTLY_IMPORTING, false)
+        await cache.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
     //console.log('offset for query :', offset)
