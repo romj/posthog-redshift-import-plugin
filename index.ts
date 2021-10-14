@@ -45,7 +45,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const REDIS_OFFSET_KEY = 0
+const REDIS_OFFSET_KEY = dze
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -207,6 +207,9 @@ const importAndIngestEvents = async (
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         meta.config.tableName
     )}
+    WHERE NOT EXISTS (
+        SELECT 1 FROM ${sanitizeSqlIdentifier(config.logTableName)} 
+        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.logTableName)}.event_id)
     ORDER BY ${sanitizeSqlIdentifier( config.orderByColumn)}
     OFFSET $1 LIMIT ${EVENTS_PER_BATCH}`
 
