@@ -61,12 +61,20 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     //return unquotedIdentifier.replace(/[^\w\d_]+/g, '')
 }
 
+const logMessage = async (message, config, logToRedshift = false) => {
+    console.log(message)
+    if (logToRedshift) {
+        const query = 'INSERT INTO src_posthog.plugin_run_log (event_at, message) VALUES (GETDATE(), $1)'
+        const queryResponse = await executeQuery(query, [message], config)
+    }
+}
+
 export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    console.log('setupPlugin')
+    await logMessage('setupPlugin', config, false)
     const requiredConfigOptions = ['clusterHost', 'clusterPort', 'dbName', 'dbUsername', 'dbPassword']
     for (const option of requiredConfigOptions) {
         if (!(option in config)) {
