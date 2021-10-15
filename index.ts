@@ -136,7 +136,7 @@ const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-
+    const { global, cache, config, jobs } = meta
     const totalRowsResult = await executeQuery(
         `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id)`,
         [],
@@ -174,7 +174,6 @@ const importAndIngestEvents = async (
         return
     }
     
-    const { global, cache, config, jobs } = meta
     if (global.totalRows < 1)  {
         console.log(`No rows to process in ${config.tableName}`)
         // await storage.set(IS_CURRENTLY_IMPORTING, false)
