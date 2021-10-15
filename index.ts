@@ -279,6 +279,7 @@ const transformations: TransformationsMap = {
         author: 'yakkomajuri',
         transform: async (row, _) => {
             const { event_id, timestamp, distinct_id, event, properties, set} = row
+            console.log('row :', row)
             let eventToIngest = {
                 "event": event,
                 id:event_id,
