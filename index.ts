@@ -244,7 +244,7 @@ const importAndIngestEvents = async (
         } from them.`
     )
 
-    if (eventsToIngest.length < offset + EVENTS_PER_BATCH) { // HAS TO BE ADAPTED ?
+    if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
         console.log('finished ingested')
         cache.set(IS_CURRENTLY_IMPORTING, false)
         return 
