@@ -142,6 +142,7 @@ const importAndIngestEvents = async (
         [],
         config
     )
+    console.log('totalRowsResult')
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
