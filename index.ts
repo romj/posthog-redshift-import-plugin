@@ -106,8 +106,8 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         console.log('EXIT due to initial value = true')
         return
     }
-    storage.set(IS_CURRENTLY_IMPORTING, true)
-
+    await storage.set(IS_CURRENTLY_IMPORTING, true)
+    console.log('storage :', storage)
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
 
     const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
@@ -155,6 +155,8 @@ const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
+    const storage = payload.storage
+    console.log('storage in method:', storage)
     if (payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows. Skipped them.`)
         await storage.set(IS_CURRENTLY_IMPORTING, false)
@@ -162,7 +164,6 @@ const importAndIngestEvents = async (
     }
     
     const { global, cache, config, jobs } = meta
-    const storage = payload.storage
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
         await storage.set(IS_CURRENTLY_IMPORTING, false)
