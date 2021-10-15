@@ -249,7 +249,7 @@ const importAndIngestEvents = async (
     )
 
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
-        console.log('finished ingested')
+        console.log('finished ingested', storage)
         await storage.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
