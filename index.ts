@@ -47,7 +47,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const IS_CURRENTLY_IMPORTING = 'redshift_importinfregb'
+const IS_CURRENTLY_IMPORTING = 'redshift_importfrezinfregb'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -108,8 +108,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
-    const importing_value = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('importing value :', importing_value)
+    console.log('importing value :', storage,typeof storage)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
 
@@ -159,7 +158,7 @@ const importAndIngestEvents = async (
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     const storage = await payload.storage
-    console.log('storage in method:', storage)
+    console.log('storage in method:', storage, typeof storage)
     if (payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows. Skipped them.`)
         await storage.set(IS_CURRENTLY_IMPORTING, false)
@@ -249,7 +248,7 @@ const importAndIngestEvents = async (
     )
 
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
-        console.log('finished ingested', storage)
+        console.log('finished ingested', storage,typeof storage)
         await storage.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
