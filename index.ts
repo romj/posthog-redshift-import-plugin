@@ -108,7 +108,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
     storage.set(IS_CURRENTLY_IMPORTING, true)
 
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
 
     const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
     console.log('after job run value, ', endValue)
@@ -157,15 +157,15 @@ const importAndIngestEvents = async (
 ) => {
     if (payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows. Skipped them.`)
-        await cache.set(IS_CURRENTLY_IMPORTING, false)
+        await storage.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
     
     const { global, cache, config, jobs } = meta
-    
+    const storage = payload.storage
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
-        await cache.set(IS_CURRENTLY_IMPORTING, false)
+        await storage.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
@@ -246,7 +246,7 @@ const importAndIngestEvents = async (
 
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
         console.log('finished ingested')
-        cache.set(IS_CURRENTLY_IMPORTING, false)
+        storage.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
 
