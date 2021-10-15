@@ -108,8 +108,8 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
-    const storage = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('storage (2) :', storage)
+    const importing_value = await storage.get(IS_CURRENTLY_IMPORTING)
+    console.log('importing value :', importing_value)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
 
