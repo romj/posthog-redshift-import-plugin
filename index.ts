@@ -75,29 +75,6 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
 
-
-    // the way this is done means we'll continuously import as the table grows
-    // to only import historical data, we should set a totalRows value in storage once
-    const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id)`,
-        [],
-        config
-    )
-    if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
-        throw new Error('Unable to connect to Redshift!')
-    }
-    global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-    console.log('Rows to import  :', global.totalRows)
-
-    // if set to only import historical data, take a "snapshot" of the count
-    // on the first run and only import up to that point
-    if (config.importMechanism === 'Only import historical data') {
-        const totalRowsSnapshot = await storage.get('total_rows_snapshot', null)
-        if (!totalRowsSnapshot) {
-            await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
-        } else {
-            global.totalRows = Number(totalRowsSnapshot)
-        }
     }
 
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
@@ -159,22 +136,54 @@ const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-    const storage = await payload.storage
-    const storageValue = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('storage (storageValue in method), ', storageValue)
-    console.log('storage in method:', storage, typeof storage)
+
+    const totalRowsResult = await executeQuery(
+        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id)`,
+        [],
+        config
+    )
+    if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
+        throw new Error('Unable to connect to Redshift!')
+    }
+    global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
+    console.log('Rows to import  :', global.totalRows)
+
+    /*
+    // if set to only import historical data, take a "snapshot" of the count
+    // on the first run and only import up to that point
+    if (config.importMechanism === 'Only import historical data') {
+        const totalRowsSnapshot = await storage.get('total_rows_snapshot', null)
+        if (!totalRowsSnapshot) {
+            await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
+        } else {
+            global.totalRows = Number(totalRowsSnapshot)
+        }*/
+
+
+    //const storage = await payload.storage
+    //const storageValue = await storage.get(IS_CURRENTLY_IMPORTING)
+    //console.log('storage (storageValue in method), ', storageValue)
+    //console.log('storage in method:', storage, typeof storage)
+
     if (payload.retriesPerformedSoFar >= 15) {
         console.error(`Import error: Unable to process rows. Skipped them.`)
-        await storage.set(IS_CURRENTLY_IMPORTING, false)
-        return 
+        //await storage.set(IS_CURRENTLY_IMPORTING, false)
+        await jobs
+            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
+            .runIn(10, 'seconds')
+        return
     }
     
     const { global, cache, config, jobs } = meta
     if (global.totalRows < 1)  {
         console.log(`No rows to process in ${config.tableName}`)
-        await storage.set(IS_CURRENTLY_IMPORTING, false)
+        // await storage.set(IS_CURRENTLY_IMPORTING, false)
+        await jobs
+            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
+            .runIn(10, 'seconds')
         return
     }
+
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         config.tableName
     )}
@@ -195,6 +204,7 @@ const importAndIngestEvents = async (
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
             .runIn(nextRetrySeconds, 'seconds')
+        return 
     }
     if (queryResponse.error ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
@@ -205,6 +215,7 @@ const importAndIngestEvents = async (
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
             .runIn(nextRetrySeconds, 'seconds')
+        return
     }
     if (!queryResponse.queryResult ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
@@ -215,6 +226,7 @@ const importAndIngestEvents = async (
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
             .runIn(nextRetrySeconds, 'seconds')
+        return
     }
 
     const eventsToIngest: TransformedPluginEvent[] = []
@@ -253,8 +265,11 @@ const importAndIngestEvents = async (
 
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
         console.log('finished ingested', storage,typeof storage)
-        await storage.set(IS_CURRENTLY_IMPORTING, false)
-        return 
+        //await storage.set(IS_CURRENTLY_IMPORTING, false)
+        await jobs
+            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
+            .runIn(10, 'seconds') 
+        return
     }
 
     
