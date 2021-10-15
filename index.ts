@@ -279,16 +279,19 @@ const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
         transform: async (row, _) => {
-            const { event_id, timestamp, distinct_id, event, properties} = row
+            const { event_id, event_at, distinct_id, event, properties, set} = row
             console.log('properties :', properties)
-            const eventToIngest = {
+            let eventToIngest = {
                 "event": event,
                 id:event_id,
                 properties: {
                     distinct_id,
-                    timestamp,
+                    event_at,
                     ...JSON.parse(properties)
                 }
+            }
+            if (set){
+                eventToIngest['properties']['$set'] = ...JSON.parse(set) 
             }
             return eventToIngest
         }
