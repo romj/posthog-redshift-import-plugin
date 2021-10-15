@@ -1,5 +1,5 @@
 {
-    "name": "Redshift Import Plugin (BETA)",
+    "name": "Redshift Import Plugin (Mael)",
     "url": "https://github.com/posthog/posthog-redshift-import-plugin",
     "description": "Import PostHog events from Amazon Redshift.",
     "main": "index.ts",

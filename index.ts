@@ -52,13 +52,9 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
 const logMessage = async (message, config, logToRedshift = false) => {
-    //console.log('logMessage')
-    //console.log(message)
     if (logToRedshift) {
         const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
-        //console.log(query)
         const queryResponse = await executeQuery(query, [message], config)
-        //console.log(queryResponse)
     }
 }
 
@@ -78,7 +74,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     if (!config.clusterHost.endsWith('redshift.amazonaws.com')) {
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
-    //console.log('redshift check OK blablah')
+
 
     // the way this is done means we'll continuously import as the table grows
     // to only import historical data, we should set a totalRows value in storage once
@@ -101,81 +97,27 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
             await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
         } else {
             global.totalRows = Number(totalRowsSnapshot)
-            //console.log('5 - global.totalRows (historical) : ', global.totalRows)
         }
     }
 
-    const offset = 0
-    
-    // used for picking up where we left off after a restart
-    //const offset = await storage.get(REDIS_OFFSET_KEY, 0)
-    //console.log('offset : ', offset)
-    // needed to prevent race conditions around offsets leading to events ingested twice
-    //console.log('global.initialOffset 1/2 : ', global.initialOffset)
-    //console.log(Number(offset) / EVENTS_PER_BATCH)
-    //console.log('new offset :', test)
-    //console.log('offset as defined :', offset)
-    //prend des valeurs dans storage et les utilise pour attribuer des valeurs dans global et dans cache
-    
-    //offset : works --> number of new line
-    //global
-    //console.log('5 - offset : ', offset)
-    // console.log('5 - global.initialOffset : ', global.initialOffset)
-    // console.log('5 - cache.set :', cache.set)
-
-    global.initialOffset = Number(offset)
-    //console.log('global.initialOffset, ',global.initialOffset)
-
-    await cache.set(offset, Math.ceil(Number(offset) / EVENTS_PER_BATCH))
-    const test = cache.get(offset)
-    //console.log('cache offset, ', test)
-
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
     console.log('storage, ', initialValue)
-
     if (initialValue === true) {
         console.log('EXIT due to initial value = true')
         return
     }
-
     storage.set(IS_CURRENTLY_IMPORTING, true)
-    
+
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
 
-    const endValue = await cache.get(IS_CURRENTLY_IMPORTING)
+    const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
     console.log('after job run value, ', endValue)
 }
 
-/*
-const getTotalRowsToImport = async (config) => {
-    console.log('const dedicated to count of number of row to import')
-    const tableName = sanitizeSqlIdentifier(config.tableName),
-          logTableName = sanitizeSqlIdentifier(config.logTableName)
-    const totalRowsResultBis = await executeQuery(
-        `SELECT COUNT(1) FROM ${tableName} WHERE NOT EXISTS (SELECT 1 FROM ${logTableName} WHERE ${tableName}.event_id = ${logTableName}.event_id)`,
-        [],
-        config
-    )
-    console.log('output : ', totalRowsResultBis.queryResult.rows[0].count)
-    return Number(totalRowsResultBis.queryResult.rows[0].count)
-}
-
-console.log('5 : ', getTotalRowsToImport)*/
-
-
-
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     console.log('teardown')
-    //const redisOffset = await cache.get(offset, 0)
-    //réutilise la valeur de cache donnée plus tôt 
-    //console.log('redisOffset :', redisOffset)
-    //const workerOffset = Number(redisOffset) * EVENTS_PER_BATCH
-    //console.log('workerOffset :', workerOffset)
-    //const offsetToStore = workerOffset > global.totalRows ? global.totalRows : workerOffset
-    //console.log('offsetToStore :', offsetToStore)
     const beforeTearDown = await cache.get(IS_CURRENTLY_IMPORTING)
     console.log('value before teardown', beforeTearDown)
-
     await storage.set(IS_CURRENTLY_IMPORTING, false)
     console.log('teardown finished')
 }
@@ -211,30 +153,21 @@ const executeQuery = async (
 
 const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
-    //this object has two properties : offset and retriesPerformedSoFar
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-    //const beginningOfIngestion = await cache.get(IS_CURRENTLY_IMPORTING)
-    //consol.log('value at beginning of ingestion', beginningOfIngestion)
-
-    if (payload.offset && payload.retriesPerformedSoFar >= 15) {
-        console.error(`Import error: Unable to process rows ${payload.offset}-${
-            payload.offset + EVENTS_PER_BATCH
-        }. Skipped them.`)
+    if (payload.retriesPerformedSoFar >= 15) {
+        console.error(`Import error: Unable to process rows. Skipped them.`)
         await cache.set(IS_CURRENTLY_IMPORTING, false)
         return 
     }
     
     const { global, cache, config, jobs } = meta
     
-    let offset: number
-   
     if (global.totalRows < 1)  {
         console.log(`Done processing all rows in ${config.tableName}`)
         await cache.set(IS_CURRENTLY_IMPORTING, false)
         return
     }
-    //console.log('offset for query :', offset)
     const query = `SELECT * FROM ${sanitizeSqlIdentifier(
         config.tableName
     )}
@@ -245,19 +178,12 @@ const importAndIngestEvents = async (
     ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
     LIMIT ${EVENTS_PER_BATCH}`
 
-    //console.log("query :", query)
-
-    //console.log('5 - values : ', values)
-
-
     const queryResponse = await executeQuery(query, [], config)
     if (!queryResponse ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
         console.log('A')
         console.log(
-            `Unable to process rows ${offset}-${
-                offset + EVENTS_PER_BATCH
-            }. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
+            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
@@ -267,9 +193,7 @@ const importAndIngestEvents = async (
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
         console.log('B')
         console.log(
-            `Unable to process rows ${offset}-${
-                offset + EVENTS_PER_BATCH
-            }. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
+            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
@@ -279,9 +203,7 @@ const importAndIngestEvents = async (
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
         console.log('C')
         console.log(
-            `Unable to process rows ${offset}-${
-                offset + EVENTS_PER_BATCH
-            }. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
+            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
@@ -298,7 +220,6 @@ const importAndIngestEvents = async (
     const eventIdsIngested = []    
 
     for (const event of eventsToIngest) {
-        //console.log(event)
         posthog.capture(event.event, event.properties)
         eventIdsIngested.push(event.id)
     }
@@ -306,9 +227,6 @@ const importAndIngestEvents = async (
 
     console.log('updated total rows :', global.totalRows)
     
-    //console.log('eventIdsIngested :', eventIdsIngested)
-    //console.log('meta.config.logTableName :', meta.config.logTableName)
-
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
 
     const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
@@ -318,19 +236,15 @@ const importAndIngestEvents = async (
     VALUES
     ${joinedEventIds}`
 
-    //console.log('insertQuery', insertQuery)
-
     const insertQueryResponse = await executeQuery(insertQuery, [], config)
-    
-    console.log('insertQueryResponse', insertQueryResponse)
-
+ 
     console.log(
-        `Processed rows ${offset}-${offset + EVENTS_PER_BATCH} and ingested ${eventsToIngest.length} event${
+        `Processed rows and ingested ${eventsToIngest.length} event${
             eventsToIngest.length > 1 ? 's' : ''
         } from them.`
     )
 
-    if (eventsToIngest.length < offset + EVENTS_PER_BATCH) {
+    if (eventsToIngest.length < offset + EVENTS_PER_BATCH) { // HAS TO BE ADAPTED ?
         console.log('finished ingested')
         cache.set(IS_CURRENTLY_IMPORTING, false)
         return 
@@ -340,66 +254,11 @@ const importAndIngestEvents = async (
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
 }
 
-/*
-// Transformations can be added by any contributor
-// 'author' should be the contributor's GH username
 const transformations: TransformationsMap = {
     'default': {
         author: 'yakkomajuri',
         transform: async (row, _) => {
-            const { timestamp, distinct_id, event, properties } = row
-            const eventToIngest = {
-                event,
-                properties: {
-                    timestamp,
-                    distinct_id,
-                    ...JSON.parse(properties),
-                    source: 'redshift_import',
-                }
-            }
-            return eventToIngest
-        }
-    },
-    'JSON Map': {
-        author: 'yakkomajuri',
-        transform: async (row, { attachments }) => {
-            if (!attachments.rowToEventMap) {
-                throw new Error('Row to event mapping JSON file not provided!')
-            }
-
-            let rowToEventMap: Record<string, string> = {}
-            try {
-                rowToEventMap = JSON.parse(attachments.rowToEventMap.contents.toString())
-            } catch {
-                throw new Error('Row to event mapping JSON file contains invalid JSON!')
-            }
-            const eventToIngest = {
-                event: '',
-                properties: {} as Record<string, any>
-            }
-            for (const [colName, colValue] of Object.entries(row)) {
-                if (!rowToEventMap[colName]) {
-                    continue
-                }
-                if (rowToEventMap[colName] === 'event') {
-                    eventToIngest.event = colValue
-                } else {
-                    eventToIngest.properties[rowToEventMap[colName]] = colValue
-                }
-            }
-            return eventToIngest
-        }
-    }
-}
-*/
-const transformations: TransformationsMap = {
-    'default': {
-        author: 'yakkomajuri',
-        transform: async (row, _) => {
-            //console.log('transforming')
-            //console.log(row)
             const { event_id, timestamp, distinct_id, event, properties, set } = row
-            console.log(`timestamp = ${timestamp}, distinct_id=${distinct_id}, event=${event}, properties=${properties}, set=${set}`)
             const eventToIngest = {
                 "event": event,
                 id:event_id,
@@ -412,9 +271,6 @@ const transformations: TransformationsMap = {
                     }
                 }
             }
-            //console.log('eventToIngest')
-            //console.log(eventToIngest)
-            //console.log(`eventToIngest.event = ${eventToIngest.event}`)
             return eventToIngest
         }
     }
