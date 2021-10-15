@@ -62,6 +62,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
 }
 
+
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
     await logMessage('setupPlugin', config, true)
 
@@ -75,7 +76,6 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
         throw new Error('Cluster host must be a valid AWS Redshift host')
     }
 
-    }
 
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
     console.log('storage (initial value), ', initialValue)
