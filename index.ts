@@ -47,7 +47,7 @@ interface TransformationsMap {
     }
 }
 const EVENTS_PER_BATCH = 10
-const IS_CURRENTLY_IMPORTING = 'redshift_importfrezinfregb'
+const IS_CURRENTLY_IMPORTING = 'redshift_importfbbrezinfregb'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
