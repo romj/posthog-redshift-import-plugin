@@ -46,7 +46,7 @@ interface TransformationsMap {
         transform: (row: QueryResultRow, meta: PluginMeta<RedshiftImportPlugin>) => Promise<TransformedPluginEvent>
     }
 }
-const EVENTS_PER_BATCH = 10
+const EVENTS_PER_BATCH = 500
 const IS_CURRENTLY_IMPORTING = 'redshift_impordbyttfbbrezinfregb'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
@@ -78,7 +78,6 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
 
 
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('storage (initial value), ', initialValue)
     if (initialValue === true) {
         console.log('EXIT due to initial value = true')
         return
@@ -86,21 +85,16 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
     const updatedValue = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('storage (updatedValue), ', updatedValue)
-    console.log('storage before running import :', storage,typeof storage)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
 
     const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
-    console.log('after job run value, ', endValue)
 }
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
     console.log('teardown')
     const beforeTearDown = await cache.get(IS_CURRENTLY_IMPORTING)
-    console.log('value before teardown', beforeTearDown)
     await storage.set(IS_CURRENTLY_IMPORTING, false)
-    console.log('teardown finished')
 }
 
 
@@ -142,12 +136,11 @@ const importAndIngestEvents = async (
         [],
         config
     )
-    console.log('totalRowsResult')
     if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-    console.log('Rows to import  :', global.totalRows)
+    
 
     /*
     // if set to only import historical data, take a "snapshot" of the count
@@ -176,7 +169,6 @@ const importAndIngestEvents = async (
     }
     
     if (global.totalRows < 1)  {
-        console.log(`No rows to process in ${config.tableName}`)
         // await storage.set(IS_CURRENTLY_IMPORTING, false)
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
@@ -197,7 +189,6 @@ const importAndIngestEvents = async (
     const queryResponse = await executeQuery(query, [], config)
     if (!queryResponse ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log('A')
         console.log(
             `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
@@ -208,7 +199,6 @@ const importAndIngestEvents = async (
     }
     if (queryResponse.error ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log('B')
         console.log(
             `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
@@ -219,7 +209,6 @@ const importAndIngestEvents = async (
     }
     if (!queryResponse.queryResult ) {
         const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log('C')
         console.log(
             `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
         )
@@ -244,7 +233,6 @@ const importAndIngestEvents = async (
     }
     global.totalRows = global.totalRows - eventIdsIngested.length
 
-    console.log('updated total rows :', global.totalRows)
     
     const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
 
@@ -257,12 +245,6 @@ const importAndIngestEvents = async (
 
     const insertQueryResponse = await executeQuery(insertQuery, [], config)
  
-    console.log(
-        `Processed rows and ingested ${eventsToIngest.length} event${
-            eventsToIngest.length > 1 ? 's' : ''
-        } from them.`
-    )
-
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
         //await storage.set(IS_CURRENTLY_IMPORTING, false)
         await jobs
@@ -280,7 +262,7 @@ const transformations: TransformationsMap = {
         author: 'yakkomajuri',
         transform: async (row, _) => {
             const { event_id, timestamp, distinct_id, event, properties, set} = row
-            console.log('row :', row)
+
             let eventToIngest = {
                 "event": event,
                 id:event_id,
@@ -293,7 +275,6 @@ const transformations: TransformationsMap = {
             if (set){
                 eventToIngest['properties']['$set'] = JSON.parse(set) 
             }
-            console.log('event to ingest :', eventToIngest)
             return eventToIngest
         }
     }

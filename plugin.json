@@ -57,7 +57,7 @@
             "key": "orderByColumn",
             "name": "'Order by' column",
             "type": "string",
-            "default": "event_at"
+            "default": "timestamp"
         },
         {
             "key": "eventLogTableName",
