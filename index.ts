@@ -87,7 +87,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     const updatedValue = await storage.get(IS_CURRENTLY_IMPORTING)
 
     console.log('launching job')
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(1, 'seconds')
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
     console.log('finished job')
     const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
 }
