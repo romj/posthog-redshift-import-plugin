@@ -86,7 +86,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
     logMessage('launching job', config, true)
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
     logMessage('finished job', config, true)
    
 }
@@ -132,134 +132,6 @@ const importAndIngestEvents = async (
 ) => {
     const { global, cache, config, jobs } = meta
     logMessage('launched', config, true)
-    const totalRowsResult = await executeQuery(
-        `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id)`,
-        [],
-        config
-    )
-    if (!totalRowsResult || totalRowsResult.error || !totalRowsResult.queryResult) {
-        throw new Error('Unable to connect to Redshift!')
-    }
-    global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-    logMessage(global.totalRows, config, true)
-    
-
-    /*
-    // if set to only import historical data, take a "snapshot" of the count
-    // on the first run and only import up to that point
-    if (config.importMechanism === 'Only import historical data') {
-        const totalRowsSnapshot = await storage.get('total_rows_snapshot', null)
-        if (!totalRowsSnapshot) {
-            await storage.set('total_rows_snapshot', Number(totalRowsResult.queryResult.rows[0].count))
-        } else {
-            global.totalRows = Number(totalRowsSnapshot)
-        }*/
-
-
-    //const storage = await payload.storage
-    //const storageValue = await storage.get(IS_CURRENTLY_IMPORTING)
-    //console.log('storage (storageValue in method), ', storageValue)
-    //console.log('storage in method:', storage, typeof storage)
-
-    if (payload.retriesPerformedSoFar >= 15) {
-        console.error(`Import error: Unable to process rows. Skipped them.`)
-        //await storage.set(IS_CURRENTLY_IMPORTING, false)
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
-            .runIn(10, 'seconds')
-        return
-    }
-    
-    if (global.totalRows < 1)  {
-        // await storage.set(IS_CURRENTLY_IMPORTING, false)
-        console.log('nothing to import')
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
-            .runIn(10, 'seconds')
-        return
-    }
-
-    const query = `SELECT * FROM ${sanitizeSqlIdentifier(
-        config.tableName
-    )}
-    WHERE NOT EXISTS (
-        SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} 
-        WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id
-        )
-    ORDER BY ${sanitizeSqlIdentifier(config.orderByColumn)}
-    LIMIT ${EVENTS_PER_BATCH}`
-
-    const queryResponse = await executeQuery(query, [], config)
-    if (!queryResponse ) {
-        const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log(
-            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
-        )
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
-            .runIn(nextRetrySeconds, 'seconds')
-        return 
-    }
-    if (queryResponse.error ) {
-        const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log(
-            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
-        )
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
-            .runIn(nextRetrySeconds, 'seconds')
-        return
-    }
-    if (!queryResponse.queryResult ) {
-        const nextRetrySeconds = 2 ** payload.retriesPerformedSoFar * 3
-        console.log(
-            `Unable to process rows. Retrying in ${nextRetrySeconds}. Error: ${queryResponse.error}`
-        )
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: payload.retriesPerformedSoFar + 1 })
-            .runIn(nextRetrySeconds, 'seconds')
-        return
-    }
-
-    const eventsToIngest: TransformedPluginEvent[] = []
-
-    for (const row of queryResponse.queryResult!.rows) {
-        const event = await transformations[config.transformationName].transform(row, meta)
-        eventsToIngest.push(event)
-    }
-    
-    const eventIdsIngested = []    
-
-    for (const event of eventsToIngest) {
-        posthog.capture(event.event, event.properties)
-        eventIdsIngested.push(event.id)
-    }
-    global.totalRows = global.totalRows - eventIdsIngested.length
-
-    
-    const joinedEventIds = eventIdsIngested.map(x => `('${x}', GETDATE())`).join(',')
-
-    const insertQuery = `INSERT INTO ${sanitizeSqlIdentifier(
-        meta.config.eventLogTableName
-    )}
-    (event_id, exported_at)
-    VALUES
-    ${joinedEventIds}`
-
-    const insertQueryResponse = await executeQuery(insertQuery, [], config)
- 
-    if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
-        //await storage.set(IS_CURRENTLY_IMPORTING, false)
-        console.log('loading next batch')
-        await jobs
-            .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
-            .runIn(10, 'seconds') 
-        return
-    }
-
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 })
-               .runIn(1, 'seconds')
-    return 
 }
 
 const transformations: TransformationsMap = {
