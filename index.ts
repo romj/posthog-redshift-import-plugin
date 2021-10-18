@@ -52,6 +52,7 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
 const logMessage = async (message, config, logToRedshift = false) => {
+    console.log(message)
     if (logToRedshift) {
         const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
         const queryResponse = await executeQuery(query, [message], config)
