@@ -85,12 +85,10 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     }
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
-    const updatedValue = await storage.get(IS_CURRENTLY_IMPORTING)
-
-    console.log('launching job')
+    logMessage('launching job', config, true)
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
-    console.log('finished job')
-    const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
+    logMessage('finished job', config, true)
+   
 }
 
 export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ global, cache, storage }) => {
@@ -132,8 +130,8 @@ const importAndIngestEvents = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
-    console.log('launched')
     const { global, cache, config, jobs } = meta
+    logMessage('launched', config, true)
     const totalRowsResult = await executeQuery(
         `SELECT COUNT(1) FROM ${sanitizeSqlIdentifier(config.tableName)} WHERE NOT EXISTS (SELECT 1 FROM ${sanitizeSqlIdentifier(config.eventLogTableName)} WHERE ${sanitizeSqlIdentifier(config.tableName)}.event_id = ${sanitizeSqlIdentifier(config.eventLogTableName)}.event_id)`,
         [],
@@ -143,7 +141,7 @@ const importAndIngestEvents = async (
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
-    console.log('rows to import :', global.totalRows)
+    logMessage(global.totalRows, config, true)
     
 
     /*
