@@ -140,6 +140,7 @@ const importAndIngestEvents = async (
         throw new Error('Unable to connect to Redshift!')
     }
     global.totalRows = Number(totalRowsResult.queryResult.rows[0].count)
+    console.log('rows to import :', global.totalRows)
     
 
     /*
