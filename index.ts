@@ -87,7 +87,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     const updatedValue = await storage.get(IS_CURRENTLY_IMPORTING)
 
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0, storage: storage }).runIn(10, 'seconds')
-
+    
     const endValue = await storage.get(IS_CURRENTLY_IMPORTING)
 }
 
@@ -170,6 +170,7 @@ const importAndIngestEvents = async (
     
     if (global.totalRows < 1)  {
         // await storage.set(IS_CURRENTLY_IMPORTING, false)
+        console.log('nothing to import')
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
             .runIn(10, 'seconds')
@@ -247,13 +248,13 @@ const importAndIngestEvents = async (
  
     if (eventsToIngest.length < EVENTS_PER_BATCH) { // ADAPTED ?
         //await storage.set(IS_CURRENTLY_IMPORTING, false)
+        console.log('loading next batch')
         await jobs
             .importAndIngestEvents({ ...payload, retriesPerformedSoFar: 0})
             .runIn(10, 'seconds') 
         return
     }
 
-    
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 })
                .runIn(1, 'seconds')
     return 
