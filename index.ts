@@ -254,7 +254,9 @@ const importAndIngestEvents = async (
     }
 
     
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runNow()
+    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 })
+               .runIn(1, 'seconds')
+    return 
 }
 
 const transformations: TransformationsMap = {
