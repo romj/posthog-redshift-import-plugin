@@ -41,11 +41,6 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
     console.log('setupPlugin')
-    console.log('config', config)
-    console.log('cache', cache)
-    console.log(jobs)
-    console.log('global', global)
-    console.log('storage', storage)
 
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
     
@@ -76,9 +71,5 @@ const randomJobJean = async (
 ) => {
     const { global, cache, config, jobs } = meta
     console.log('randomJobJean')
-    console.log('randomJobJean - config', config)
-    console.log('randomJobJean - cache', cache)
-    console.log(jobs)
-    console.log('randomJobJean - global', global)
     return 
 }
