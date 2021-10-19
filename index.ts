@@ -54,7 +54,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
     console.log('launching job')
-    await jobs.randomJobJean({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    await jobs.randomJobJean({ successiveRuns: 0 }).runIn(10, 'seconds')
     console.log('done launching job')
    
 }
@@ -70,6 +70,8 @@ const randomJobJean = async (
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     const { global, cache, config, jobs } = meta
-    console.log('randomJobJean')
+    console.log('randomJobJean ', payload.successiveRuns, ' before next call')
+    await jobs.randomJobJean({ successiveRuns: payload.successiveRuns+1 }).runIn(10, 'seconds')
+    console.log('randomJobJean ', payload.successiveRuns, ' after next call')
     return 
 }
