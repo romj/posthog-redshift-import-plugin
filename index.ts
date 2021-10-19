@@ -70,8 +70,12 @@ const randomJobJean = async (
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     const { global, cache, config, jobs } = meta
-    console.log('randomJobJean ', payload.successiveRuns, ' before next call')
-    await jobs.randomJobJean({ successiveRuns: payload.successiveRuns+1 }).runIn(10, 'seconds')
+    console.log('randomJobJean ', payload.successiveRuns)
+    if (payload.successiveRuns >= 5) {
+        console.log('done with 5+ calls, returning')
+        return
+    }
+    await jobs.randomJobJean({ successiveRuns: payload.successiveRuns+1 }).runIn(1, 'seconds')
     console.log('randomJobJean ', payload.successiveRuns, ' after next call')
     return 
 }
