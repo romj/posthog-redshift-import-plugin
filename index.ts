@@ -28,7 +28,6 @@ type RedshiftImportPlugin = Plugin<{
     }
 }>
 
-const EVENTS_PER_BATCH = 500
 const IS_CURRENTLY_IMPORTING = 'stripped_import_plugin'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
