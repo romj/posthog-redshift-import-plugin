@@ -29,6 +29,7 @@ type RedshiftImportPlugin = Plugin<{
 }>
 
 const IS_CURRENTLY_IMPORTING = 'stripped_import_plugin'
+const RUN_LIMIT = 20
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
@@ -70,11 +71,11 @@ const randomJobJean = async (
 ) => {
     const { global, cache, config, jobs } = meta
     console.log('randomJobJean ', payload.successiveRuns)
-    if (payload.successiveRuns >= 5) {
-        console.log('done with 5+ calls, returning')
+    if (payload.successiveRuns >= RUN_LIMIT) {
+        console.log(`done with ${RUN_LIMIT} calls, returning`)
         return
     }
-    await jobs.randomJobJean({ successiveRuns: payload.successiveRuns+1 }).runIn(1, 'seconds')
+    await jobs.randomJobJean({ successiveRuns: payload.successiveRuns+1 }).runIn(10, 'seconds')
     console.log('randomJobJean ', payload.successiveRuns, ' after next call')
     return 
 }
