@@ -43,7 +43,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     console.log('setupPlugin')
     console.log('config', config)
     console.log('cache', cache)
-    console.log('job', jobs)
+    console.log(jobs)
     console.log('global', global)
     console.log('storage', storage)
 
@@ -78,7 +78,7 @@ const importAndIngestEvents = async (
     console.log('importAndIngestEvents')
     console.log('importAndIngestEvents - config', config)
     console.log('importAndIngestEvents - cache', cache)
-    console.log('importAndIngestEvents - job', jobs)
+    console.log(jobs)
     console.log('importAndIngestEvents - global', global)
     return 
 }
