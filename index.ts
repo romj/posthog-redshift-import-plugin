@@ -35,7 +35,7 @@ const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
 }
 
 export const jobs: RedshiftImportPlugin['jobs'] = {
-    importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
+    randomJobJean: async (payload, meta) => await randomJobJean(payload as ImportEventsJobPayload, meta)
 }
 
 
@@ -59,7 +59,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
     console.log('launching job')
-    await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
+    await jobs.randomJobJean({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
     console.log('done launching job')
    
 }
@@ -70,15 +70,15 @@ export const teardownPlugin: RedshiftImportPlugin['teardownPlugin'] = async ({ g
     console.log('done tearing down')
 }
 
-const importAndIngestEvents = async (
+const randomJobJean = async (
     payload: ImportEventsJobPayload,
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     const { global, cache, config, jobs } = meta
-    console.log('importAndIngestEvents')
-    console.log('importAndIngestEvents - config', config)
-    console.log('importAndIngestEvents - cache', cache)
+    console.log('randomJobJean')
+    console.log('randomJobJean - config', config)
+    console.log('randomJobJean - cache', cache)
     console.log(jobs)
-    console.log('importAndIngestEvents - global', global)
+    console.log('randomJobJean - global', global)
     return 
 }
