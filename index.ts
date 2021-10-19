@@ -33,13 +33,6 @@ const IS_CURRENTLY_IMPORTING = 'stripped_import_plugin'
 const sanitizeSqlIdentifier = (unquotedIdentifier: string): string => {
     return unquotedIdentifier
 }
-const logMessage = async (message, config, logToRedshift = false) => {
-    console.log(message)
-    if (logToRedshift) {
-        const query = `INSERT INTO ${sanitizeSqlIdentifier(config.pluginLogTableName)} (event_at, message) VALUES (GETDATE(), $1)`
-        const queryResponse = await executeQuery(query, [message], config)
-    }
-}
 
 export const jobs: RedshiftImportPlugin['jobs'] = {
     importAndIngestEvents: async (payload, meta) => await importAndIngestEvents(payload as ImportEventsJobPayload, meta)
@@ -47,7 +40,7 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }) => {
-    await logMessage('setupPlugin', config, true)
+    console.log('setupPlugin')
     console.log('config', config)
     console.log('cache', cache)
     console.log('job', jobs)
@@ -56,7 +49,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
 
     const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
     
-    await logMessage(`initialValue = ${initialValue}`, config, true)
+    console.log('initialValue',initialValue)
     
     if (initialValue === true) {
         console.log('EXIT due to initial value = true')
@@ -65,9 +58,9 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
     
     await storage.set(IS_CURRENTLY_IMPORTING, true)
 
-    logMessage('launching job', config, true)
+    console.log('launching job')
     await jobs.importAndIngestEvents({ retriesPerformedSoFar: 0 }).runIn(10, 'seconds')
-    logMessage('finished job', config, true)
+    console.log('done launching job')
    
 }
 
@@ -82,7 +75,7 @@ const importAndIngestEvents = async (
     meta: PluginMeta<RedshiftImportPlugin>
 ) => {
     const { global, cache, config, jobs } = meta
-    logMessage('importAndIngestEvents', config, true)
+    console.log('importAndIngestEvents')
     console.log('importAndIngestEvents - config', config)
     console.log('importAndIngestEvents - cache', cache)
     console.log('importAndIngestEvents - job', jobs)
