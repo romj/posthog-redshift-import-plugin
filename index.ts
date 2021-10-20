@@ -39,15 +39,15 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 }
 
 
-export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage }, utils) => {
+export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage, utils}) => {
     console.log('setupPlugin')
     console.log(utils)
     const cursor = utils.cursor
     console.log(cursor)
-    const init = cursor.init()
+    const init = await cursor.init()
     console.log(init)
     console.log(cursor)
-    const incr = cursor.increment()
+    const incr = await cursor.increment()
     console.log(incr)
     console.log(cursor)
         
