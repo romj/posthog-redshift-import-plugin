@@ -41,28 +41,17 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage, utils}) => {
     console.log('setupPlugin')
-    console.log(utils)
-    const cursor = utils.cursor
-    console.log(cursor)
-    const init = await cursor.init()
-    console.log(init)
-    console.log(cursor)
-    const incr = await cursor.increment()
-    console.log(incr)
-    console.log(cursor)
-        
-    return
 
-    const initialValue = await storage.get(IS_CURRENTLY_IMPORTING)
+    await cursor.init(IS_CURRENTLY_IMPORTING)
     
-    console.log('initialValue',initialValue)
+    const cursorValue = cursor.increment(IS_CURRENTLY_IMPORTING)
     
-    if (initialValue === true) {
+    console.log('cursorValue = ', cursorValue)
+    
+    if (initialValue == 1) {
         console.log('EXIT due to initial value = true')
         return
     }
-    
-    await storage.set(IS_CURRENTLY_IMPORTING, true)
 
     console.log('launching job')
     await jobs.randomJobJean({ successiveRuns: 0 }).runIn(10, 'seconds')
