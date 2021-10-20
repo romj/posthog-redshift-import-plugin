@@ -41,6 +41,8 @@ export const jobs: RedshiftImportPlugin['jobs'] = {
 
 export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config, cache, jobs, global, storage, utils}) => {
     console.log('setupPlugin')
+    
+    const cursor = utils.cursor
 
     await cursor.init(IS_CURRENTLY_IMPORTING)
     
