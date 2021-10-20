@@ -46,7 +46,7 @@ export const setupPlugin: RedshiftImportPlugin['setupPlugin'] = async ({ config,
 
     await cursor.init(IS_CURRENTLY_IMPORTING)
     
-    const cursorValue = cursor.increment(IS_CURRENTLY_IMPORTING)
+    const cursorValue = await cursor.increment(IS_CURRENTLY_IMPORTING)
     
     console.log('cursorValue = ', cursorValue)
     
